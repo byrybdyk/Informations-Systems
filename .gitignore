@@ -1,0 +1,37 @@
+HELP.md
+lb1/backend/.gradle
+lb1/backend/build/
+lb1/backend/!gradle/wrapper/gradle-wrapper.jar
+lb1/backend/!**/src/main/**/build/
+lb1/backend/!**/src/test/**/build/
+
+### STS ###
+lb1/backend/.apt_generated
+lb1/backend/.classpath
+lb1/backend/.factorypath
+lb1/backend/.project
+lb1/backend/.settings
+lb1/backend/.springBeans
+lb1/backend/.sts4-cache
+bin/
+lb1/backend/!**/src/main/**/bin/
+lb1/backend/!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+lb1/backend/.idea
+lb1/backend/*.iws
+lb1/backend/*.iml
+lb1/backend/*.ipr
+out/
+lb1/backend/!**/src/main/**/out/
+lb1/backend/!**/src/test/**/out/
+
+### NetBeans ###
+lb1/backend//nbproject/private/
+lb1/backend//nbbuild/
+lb1/backend//dist/
+lb1/backend//nbdist/
+lb1/backend//.nb-gradle/
+
+### VS Code ###
+.vscode/
