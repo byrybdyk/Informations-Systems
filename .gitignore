@@ -18,7 +18,7 @@ backend/!**/src/main/**/bin/
 backend/!**/src/test/**/bin/
 
 ### IntelliJ IDEA ###
-backend/.idea
+.idea
 backend/*.iw
 backend/*.iml
 backend/*.ipr
