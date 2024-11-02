@@ -17,7 +17,7 @@ public class PersonController {
     @Autowired
     private PersonService personService;
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<Person> createPerson(@RequestBody PersonDTO personDTO) {
         Person person = new Person();
         person.setName(personDTO.getName());

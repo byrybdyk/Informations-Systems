@@ -2,6 +2,7 @@ package com.byrybdyk.lb1.dto;
 
 import com.byrybdyk.lb1.model.Coordinates;
 import com.byrybdyk.lb1.model.Discipline;
+import com.byrybdyk.lb1.model.Person;
 import com.byrybdyk.lb1.model.enums.Difficulty;
 
 import java.util.Date;
@@ -17,6 +18,9 @@ public class LabWorkDTO {
     private Float minimalPoint;
     private double personalQualitiesMinimum;
     private Float personalQualitiesMaximum;
+
+    private Long authorId;
+    private Person author;
 
 
 
@@ -98,5 +102,21 @@ public class LabWorkDTO {
 
     public void setPersonalQualitiesMaximum(Float personalQualitiesMaximum) {
         this.personalQualitiesMaximum = personalQualitiesMaximum;
+    }
+
+    public Long getAuthorId() {
+        return authorId;
+    }
+
+    public void setAuthorId(Long authorId) {
+        this.authorId = authorId;
+    }
+
+    public Person getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(Person author) {
+        this.author = author;
     }
 }
