@@ -50,6 +50,11 @@ public class LabWork {
     @JoinColumn(name = "author_id", nullable = false)
     private Person author;
 
+    @PrePersist
+    protected void onCreate() {
+        this.creationDate = new Date();
+    }
+
     public long getId() {
         return id;
     }
@@ -76,10 +81,6 @@ public class LabWork {
 
     public Date getCreationDate() {
         return creationDate;
-    }
-
-    public void setCreationDate(Date creationDate) {
-        this.creationDate = creationDate;
     }
 
     public String getDescription() {
@@ -137,5 +138,4 @@ public class LabWork {
     public void setAuthor(Person author) {
         this.author = author;
     }
-
 }
