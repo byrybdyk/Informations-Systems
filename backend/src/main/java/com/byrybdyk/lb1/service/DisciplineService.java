@@ -18,18 +18,33 @@ public class DisciplineService {
         this.disciplineRepository = disciplineRepository;
     }
 
-    // Найти дисциплину по ID
+
     public Discipline findById(Long id) {
         return disciplineRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Discipline with ID " + id + " not found"));
     }
 
-    // Сохранить новую дисциплину
+    public Discipline getOrCreateDiscipline(Discipline disciplineData) {
+        if (disciplineData.getId() != null && disciplineData.getId() > 0) {
+            Discipline existingDiscipline = findById(disciplineData.getId());
+            if (existingDiscipline != null) {
+                return existingDiscipline;
+            }
+        }
+        if (disciplineData.getName() == null || disciplineData.getName().isEmpty()) {
+            throw new IllegalArgumentException("Discipline name cannot be null or empty");
+        }
+        Discipline newDiscipline = new Discipline();
+        newDiscipline.setName(disciplineData.getName());
+        newDiscipline.setPracticeHours(disciplineData.getPracticeHours());
+        return save(newDiscipline);
+    }
+
+
     public Discipline save(Discipline discipline) {
         return disciplineRepository.save(discipline);
     }
 
-    // Обновить дисциплину
     public Discipline update(Long id, Discipline updatedDiscipline) {
         Discipline existingDiscipline = findById(id);
         existingDiscipline.setName(updatedDiscipline.getName());
@@ -37,12 +52,10 @@ public class DisciplineService {
         return disciplineRepository.save(existingDiscipline);
     }
 
-    // Удалить дисциплину по ID
     public void delete(Long id) {
         disciplineRepository.deleteById(id);
     }
 
-    // Получить все дисциплины
     public List<Discipline> findAll() {
         return disciplineRepository.findAll();
     }

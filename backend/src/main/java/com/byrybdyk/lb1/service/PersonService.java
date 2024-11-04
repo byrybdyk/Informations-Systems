@@ -17,6 +17,20 @@ public class PersonService {
         this.personRepository = authorRepository;
     }
 
+    public Person getOrCreateAuthor(Long authorId, Person authorData) {
+        if (authorId != null) {
+            Person existingAuthor = findById(authorId);
+            if (existingAuthor != null) {
+                return existingAuthor;
+            }
+            throw new IllegalArgumentException("Author with specified ID not found");
+        } else if (authorData != null) {
+            return savePerson(authorData);
+        } else {
+            throw new IllegalArgumentException("Author data cannot be null");
+        }
+    }
+
     public Person findById(Long authorId) {
         Optional<Person> personOptional = personRepository.findById(authorId);
         return personOptional.orElse(null);
