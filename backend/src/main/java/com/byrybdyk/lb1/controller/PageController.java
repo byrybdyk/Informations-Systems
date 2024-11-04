@@ -18,11 +18,11 @@ public class PageController {
 
     @GetMapping("/user/home")
     public String userHome() {
-        return "user";
+        return "user-home";
     }
 
     @GetMapping("/admin/home")
     public String adminHome() {
-        return "admin";
+        return "admin-home";
     }
 }

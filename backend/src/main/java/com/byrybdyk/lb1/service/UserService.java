@@ -48,6 +48,10 @@ public class UserService implements UserDetailsService {
         userRepository.save(user);
     }
 
+    public long countAdmins() {
+        return userRepository.countByRole(Role.ADMIN);
+    }
+
     private PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }

@@ -8,7 +8,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -31,12 +30,17 @@ public class SecurityConfig {
                 .authorizeRequests()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/auth/register", "/auth/login", "/register", "/login").permitAll() // добавьте разрешение для auth
+                .requestMatchers("/auth/register", "/auth/login", "/register", "/login").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
                 .loginPage("/login")
-                .defaultSuccessUrl("/user/home")
+                .successHandler((request, response, authentication) -> {
+                    String redirectUrl = authentication.getAuthorities().stream()
+                            .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"))
+                            ? "/admin/home" : "/user/home";
+                    response.sendRedirect(redirectUrl);
+                })
                 .permitAll()
                 .and()
                 .logout()
@@ -45,6 +49,8 @@ public class SecurityConfig {
                 .permitAll();
         return http.build();
     }
+
+
 
     @Bean
     public AuthenticationManager authManager(HttpSecurity http) throws Exception {

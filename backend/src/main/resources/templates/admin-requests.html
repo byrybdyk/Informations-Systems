@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Requests</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .approve-button {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+        .approve-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+<h1>Admin Requests</h1>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Request Date</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="request : ${requests}">
+        <td th:text="${request.id}"></td>
+        <td th:text="${request.username}"></td>
+        <td th:text="${request.requestDate}"></td>
+        <td th:text="${request.approved ? 'Approved' : 'Pending'}"></td>
+        <td>
+            <form th:action="@{/admin/approve/{id}(id=${request.id})}" method="post" th:if="${!request.approved}">
+                <button type="submit" class="approve-button">Approve</button>
+            </form>
+        </td>
+    </tr>
+    <a href="/admin/home">Back to home</a>
+    </tbody>
+</table>
+</body>
+</html>
