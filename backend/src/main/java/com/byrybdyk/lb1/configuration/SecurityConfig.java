@@ -12,6 +12,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -31,7 +33,7 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/auth/register", "/auth/login", "/register", "/login").permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()
                 .and()
                 .formLogin()
                 .loginPage("/login")
@@ -48,6 +50,22 @@ public class SecurityConfig {
                 .logoutSuccessUrl("/login?logout")
                 .permitAll();
         return http.build();
+
+//        http
+//                .csrf().disable()
+//                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+//                        .requestMatchers("/login", "/auth/register").permitAll() // Разрешить доступ к логину
+//                        .requestMatchers("/labworks/**").authenticated() // Только для аутентифицированных
+//                        .anyRequest().permitAll()
+//                )
+//                .formLogin(formLogin -> formLogin
+//                        .permitAll()
+//                )
+//                .logout(logout -> logout
+//                        .permitAll()
+//                );
+//
+//        return http.build(); // Возвращаем построенный объект SecurityFilterChain
     }
 
 

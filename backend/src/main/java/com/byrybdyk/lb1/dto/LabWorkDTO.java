@@ -3,6 +3,7 @@ package com.byrybdyk.lb1.dto;
 import com.byrybdyk.lb1.model.Coordinates;
 import com.byrybdyk.lb1.model.Discipline;
 import com.byrybdyk.lb1.model.Person;
+import com.byrybdyk.lb1.model.User;
 import com.byrybdyk.lb1.model.enums.Difficulty;
 
 import java.util.Date;
@@ -21,6 +22,9 @@ public class LabWorkDTO {
 
     private Long authorId;
     private Person author;
+
+    private Long ownerId;
+    private User owner;
 
 
 
@@ -118,5 +122,21 @@ public class LabWorkDTO {
 
     public void setAuthor(Person author) {
         this.author = author;
+    }
+
+    public Long getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(Long ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public User getOwner() {
+        return owner;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
     }
 }

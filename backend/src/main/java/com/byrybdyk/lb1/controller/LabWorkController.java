@@ -32,7 +32,9 @@ public class LabWorkController {
     @PostMapping
     public ResponseEntity<LabWork> createLabWork(@RequestBody LabWorkDTO labWorkDTO) {
         try {
+            System.out.println("Received LabWorkDTO: " + labWorkDTO);
             LabWork createdLabWork = labWorkService.createLabWorkFromDTO(labWorkDTO);
+            System.out.println("2222");
             return new ResponseEntity<>(createdLabWork, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);

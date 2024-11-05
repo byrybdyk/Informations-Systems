@@ -50,6 +50,11 @@ public class LabWork {
     @JoinColumn(name = "author_id", nullable = false)
     private Person author;
 
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner_id;
+
+
     @PrePersist
     protected void onCreate() {
         this.creationDate = new Date();
@@ -137,5 +142,13 @@ public class LabWork {
 
     public void setAuthor(Person author) {
         this.author = author;
+    }
+
+    public User getOwner_id() {
+        return owner_id;
+    }
+
+    public void setOwner_id(User owner_id) {
+        this.owner_id = owner_id;
     }
 }

@@ -4,10 +4,293 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Home</title>
+    <style>
+        /* Ограничение размера контейнера для таблицы и добавление прокрутки */
+        .table-container {
+            width: 100%;
+            max-height: 400px; /* Ограничение по высоте */
+            overflow: auto; /* Прокрутка по горизонтали и вертикали */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* Стили для модального окна */
+        .modal {
+            display: none; /* Скрыто по умолчанию */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+    <script>
+        async function addLabWork(event) {
+            event.preventDefault(); // Остановить стандартное поведение формы
+
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            // Создаем вложенные объекты для DTO
+            const labWorkDTO = {
+                name: data.name,
+                description: data.description,
+                difficulty: data.difficulty,
+                coordinates: {
+                    x: parseFloat(data.coordinatesX),
+                    y: parseFloat(data.coordinatesY),
+                },
+                discipline: {
+                    name: data.disciplineName,
+                    practiceHours: parseInt(data.practiceHours),
+                },
+                author: {
+                    name: data.authorName,
+                    weight: parseFloat(data.authorWeight),
+                    eyeColor: data.authorEyeColor,
+                    hairColor: data.authorHairColor,
+                    passportID: data.passportID,
+                    location: {
+                        x: parseFloat(data.locationX),
+                        y: parseFloat(data.locationY),
+                        name: data.locationName,
+                    },
+                },
+                minimalPoint: parseFloat(data.minimalPoint),
+                personalQualitiesMinimum: parseFloat(data.personalQualitiesMinimum),
+                personalQualitiesMaximum: parseFloat(data.personalQualitiesMaximum),
+                ownerId: parseInt(data.owner_id),
+            };
+
+            const response = await fetch('/labworks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(labWorkDTO) // Отправляем вложенные объекты
+            });
+
+            if (response.ok) {
+                // Обработка успешного ответа
+            } else {
+                alert('Error add Lab Work');
+            }
+        }
+
+        async function updateLabWork(event, labWorkId) {
+            event.preventDefault(); // Предотвращает перезагрузку страницы
+
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            const response = await fetch(`/labworks/${labWorkId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert('Lab Work updated successfully!');
+                location.reload(); // Обновление страницы для отображения обновленного элемента
+            } else {
+                alert('Error updating Lab Work');
+            }
+        }
+
+        async function editLabWork(labWorkId) {
+            const response = await fetch(`/labworks/${labWorkId}`);
+            if (response.ok) {
+                const labWork = await response.json();
+                document.getElementById('editLabWorkId').value = labWork.id;
+                document.getElementById('editLabWorkName').value = labWork.name;
+                document.getElementById('editLabWorkDisciplineName').value = labWork.discipline.name; // Добавлено поле discipline name
+                document.getElementById('editLabWorkPracticeHours').value = labWork.discipline.practiceHours; // Добавлено поле practice hours
+                document.getElementById('editLabWorkDescription').value = labWork.description;
+                document.getElementById('editLabWorkDifficulty').value = labWork.difficulty;
+                document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x; // Добавлено поле coordinates X
+                document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y; // Добавлено поле coordinates Y
+                document.getElementById('editLabWorkMinimalPoint').value = labWork.minimalPoint;
+                document.getElementById('editLabWorkPersonalQualitiesMax').value = labWork.personalQualitiesMaximum;
+                document.getElementById('editLabWorkPersonalQualitiesMin').value = labWork.personalQualitiesMinimum;
+                document.getElementById('editLabWorkAuthorName').value = labWork.author.name; // Добавлено поле author name
+                document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight; // Добавлено поле author weight
+                document.getElementById('editLabWorkAuthorEyeColor').value = labWork.author.eyeColor; // Добавлено поле author eye color
+                document.getElementById('editLabWorkAuthorHairColor').value = labWork.author.hairColor; // Добавлено поле author hair color
+                document.getElementById('editLabWorkLocationX').value = labWork.author.location.x; // Добавлено поле location X
+                document.getElementById('editLabWorkLocationY').value = labWork.author.location.y; // Добавлено поле location Y
+                document.getElementById('editLabWorkLocationName').value = labWork.author.location.name; // Добавлено поле location name
+                document.getElementById('editLabWorkPassportID').value = labWork.author.passportID; // Добавлено поле passport ID
+                document.getElementById('editModal').style.display = 'block';
+            } else {
+                alert('Error fetching Lab Work data');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+    </script>
 </head>
 <body>
 <h1>Welcome, <span th:text="${username}">User</span>!</h1>
 <p>This is the user area.</p>
+
+<h2>Add Lab Work</h2>
+<form id="addLabWorkForm" onsubmit="addLabWork(event)">
+    <input type="text" name="name" placeholder="Lab Work Name" required>
+    <input type="text" name="disciplineName" placeholder="Discipline Name" required>
+    <input type="number" name="practiceHours" placeholder="Practice Hours" required>
+    <input type="text" name="description" placeholder="Description" required>
+    <input type="text" name="difficulty" placeholder="Difficulty" required>
+    <input type="number" name="coordinatesX" placeholder="Coordinates X" required>
+    <input type="number" name="coordinatesY" placeholder="Coordinates Y" required>
+    <input type="number" name="minimalPoint" placeholder="Minimal Point" required>
+    <input type="number" name="personalQualitiesMaximum" placeholder="Personal Qualities Max" required>
+    <input type="number" name="personalQualitiesMinimum" placeholder="Personal Qualities Min" required>
+    <input type="text" name="authorName" placeholder="Author Name" required>
+    <input type="number" name="authorWeight" placeholder="Author Weight" required>
+    <input type="text" name="authorEyeColor" placeholder="Author Eye Color" required>
+    <input type="text" name="authorHairColor" placeholder="Author Hair Color" required>
+    <input type="number" name="locationX" placeholder="Location X" required>
+    <input type="number" name="locationY" placeholder="Location Y" required>
+    <input type="text" name="locationName" placeholder="Location Name" required>
+    <input type="text" name="passportID" placeholder="Passport ID" required>
+    <button type="submit">Add Lab Work</button>
+</form>
+
+<h2>LabWork Entities</h2>
+
+<div class="table-container">
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Owner</th>
+            <th>Creation Date</th>
+            <th>Name</th>
+            <th>Discipline Name</th>
+            <th>Practice Hours</th>
+            <th>Description</th>
+            <th>Difficulty</th>
+            <th>Coordinates X</th>
+            <th>Coordinates Y</th>
+            <th>Minimal Point</th>
+            <th>Personal Qualities Max</th>
+            <th>Personal Qualities Min</th>
+            <th>Author Name</th>
+            <th>Author Weight</th>
+            <th>Author Eye Color</th>
+            <th>Author Hair Color</th>
+            <th>Location X</th>
+            <th>Location Y</th>
+            <th>Location Name</th>
+            <th>Passport ID</th>
+            <th>Actions</th> <!-- Добавлено поле для действий -->
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="labWork : ${labWorks}">
+            <td th:text="${labWork.id}"></td>
+            <td th:text="${labWork.creationDate}"></td>
+            <td th:text="${labWork.name}"></td>
+            <td th:text="${labWork.discipline.name}"></td>
+            <td th:text="${labWork.discipline.practiceHours}"></td>
+            <td th:text="${labWork.description}"></td>
+            <td th:text="${labWork.difficulty}"></td>
+            <td th:text="${labWork.coordinates.x}"></td>
+            <td th:text="${labWork.coordinates.y}"></td>
+            <td th:text="${labWork.minimalPoint}"></td>
+            <td th:text="${labWork.personalQualitiesMaximum}"></td>
+            <td th:text="${labWork.personalQualitiesMinimum}"></td>
+            <td th:text="${labWork.author.name}"></td>
+            <td th:text="${labWork.author.weight}"></td>
+            <td th:text="${labWork.author.eyeColor}"></td>
+            <td th:text="${labWork.author.hairColor}"></td>
+            <td th:text="${labWork.author.location.x}"></td>
+            <td th:text="${labWork.author.location.y}"></td>
+            <td th:text="${labWork.author.location.name}"></td>
+            <td th:text="${labWork.author.passportID}"></td>
+            <td>
+                <button onclick="editLabWork(${labWork.id})">Edit</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Модальное окно для редактирования Lab Work -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Edit Lab Work</h2>
+        <form id="editLabWorkForm" onsubmit="updateLabWork(event, document.getElementById('editLabWorkId').value)">
+            <input type="hidden" id="editLabWorkId" name="id">
+            <input type="text" id="editLabWorkOwnerId" name="owner_id" placeholder="Owner ID" required>
+            <input type="text" id="editLabWorkName" name="name" placeholder="Lab Work Name" required>
+            <input type="text" id="editLabWorkDisciplineName" name="disciplineName" placeholder="Discipline Name" required>
+            <input type="number" id="editLabWorkPracticeHours" name="practiceHours" placeholder="Practice Hours" required>
+            <input type="text" id="editLabWorkDescription" name="description" placeholder="Description" required>
+            <input type="text" id="editLabWorkDifficulty" name="difficulty" placeholder="Difficulty" required>
+            <input type="number" id="editLabWorkCoordinatesX" name="coordinatesX" placeholder="Coordinates X" required>
+            <input type="number" id="editLabWorkCoordinatesY" name="coordinatesY" placeholder="Coordinates Y" required>
+            <input type="number" id="editLabWorkMinimalPoint" name="minimalPoint" placeholder="Minimal Point" required>
+            <input type="number" id="editLabWorkPersonalQualitiesMax" name="personalQualitiesMaximum" placeholder="Personal Qualities Max" required>
+            <input type="number" id="editLabWorkPersonalQualitiesMin" name="personalQualitiesMinimum" placeholder="Personal Qualities Min" required>
+            <input type="text" id="editLabWorkAuthorName" name="authorName" placeholder="Author Name" required>
+            <input type="number" id="editLabWorkAuthorWeight" name="authorWeight" placeholder="Author Weight" required>
+            <input type="text" id="editLabWorkAuthorEyeColor" name="authorEyeColor" placeholder="Author Eye Color" required>
+            <input type="text" id="editLabWorkAuthorHairColor" name="authorHairColor" placeholder="Author Hair Color" required>
+            <input type="number" id="editLabWorkLocationX" name="locationX" placeholder="Location X" required>
+            <input type="number" id="editLabWorkLocationY" name="locationY" placeholder="Location Y" required>
+            <input type="text" id="editLabWorkLocationName" name="locationName" placeholder="Location Name" required>
+            <input type="text" id="editLabWorkPassportID" name="passportID" placeholder="Passport ID" required>
+            <button type="submit">Update Lab Work</button>
+        </form>
+    </div>
+</div>
+
 <a href="/logout">Logout</a>
 </body>
 </html>

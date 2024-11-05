@@ -4,11 +4,16 @@ import com.byrybdyk.lb1.dto.LabWorkDTO;
 import com.byrybdyk.lb1.model.Discipline;
 import com.byrybdyk.lb1.model.LabWork;
 import com.byrybdyk.lb1.model.Person;
+import com.byrybdyk.lb1.model.User;
 import com.byrybdyk.lb1.repository.LabWorkRepository;
+import com.byrybdyk.lb1.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class LabWorkService {
@@ -16,13 +21,16 @@ public class LabWorkService {
     private final LabWorkRepository labWorkRepository;
     private final DisciplineService disciplineService;
     private final PersonService authorService;
+    private final UserRepository userRepository;
+    private final UserService userService;
 
     @Autowired
-    public LabWorkService(LabWorkRepository labWorkRepository, DisciplineService disciplineService, PersonService authorService) {
+    public LabWorkService(LabWorkRepository labWorkRepository, DisciplineService disciplineService, PersonService authorService, UserRepository userRepository, UserService userService) {
         this.labWorkRepository = labWorkRepository;
         this.disciplineService = disciplineService;
         this.authorService = authorService;
-
+        this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     public LabWork saveLabWork(LabWork labWork) {
@@ -33,7 +41,7 @@ public class LabWorkService {
         return labWorkRepository.findAll();
     }
 
-    private void mapDtoToLabWork(LabWork labWork, LabWorkDTO labWorkDTO, Person author) {
+    private void mapDtoToLabWork(LabWork labWork, LabWorkDTO labWorkDTO, Person author, User owner) {
         labWork.setName(labWorkDTO.getName());
         labWork.setDescription(labWorkDTO.getDescription());
         labWork.setDifficulty(labWorkDTO.getDifficulty());
@@ -42,21 +50,30 @@ public class LabWorkService {
         labWork.setPersonalQualitiesMinimum(labWorkDTO.getPersonalQualitiesMinimum());
         labWork.setPersonalQualitiesMaximum(labWorkDTO.getPersonalQualitiesMaximum());
         labWork.setAuthor(author);
+        labWork.setOwner_id(owner);
     }
 
     public LabWork createLabWorkFromDTO(LabWorkDTO labWorkDTO) {
-        LabWork labWork = new LabWork();
+        try {
+            LabWork labWork = new LabWork();
+            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthorId(), labWorkDTO.getAuthor());
+            labWork.setAuthor(author);
 
-        Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthorId(), labWorkDTO.getAuthor());
-        labWork.setAuthor(author);
+            Discipline discipline = disciplineService.getOrCreateDiscipline(labWorkDTO.getDiscipline());
+            labWork.setDiscipline(discipline);
 
-        Discipline discipline = disciplineService.getOrCreateDiscipline(labWorkDTO.getDiscipline());
-        labWork.setDiscipline(discipline);
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String userName = authentication.getName();
+            System.out.println("userName: " + userName);
+            User owner = userRepository.findByUsername(userName)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            mapDtoToLabWork(labWork, labWorkDTO, author, owner);
 
-        mapDtoToLabWork(labWork, labWorkDTO, author);
-
-        LabWork createdLabWork = saveLabWork(labWork);
-        return createdLabWork;
+            return saveLabWork(labWork);
+        } catch (Exception e) {
+            System.out.println("Error while creating LabWork: " + e.getMessage());
+            throw e; // или можно возвращать null, в зависимости от вашей логики
+        }
     }
 
 }
