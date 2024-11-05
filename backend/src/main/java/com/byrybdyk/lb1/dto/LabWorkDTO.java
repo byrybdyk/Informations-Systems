@@ -25,6 +25,9 @@ public class LabWorkDTO {
 
     private Long ownerId;
     private User owner;
+    private String ownerName;
+
+
 
 
 
@@ -138,5 +141,13 @@ public class LabWorkDTO {
 
     public void setOwner(User owner) {
         this.owner = owner;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
     }
 }

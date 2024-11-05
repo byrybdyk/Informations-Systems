@@ -62,8 +62,7 @@ public class LabWorkService {
             Discipline discipline = disciplineService.getOrCreateDiscipline(labWorkDTO.getDiscipline());
             labWork.setDiscipline(discipline);
 
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String userName = authentication.getName();
+            String userName = labWorkDTO.getOwnerName();
             System.out.println("userName: " + userName);
             User owner = userRepository.findByUsername(userName)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));

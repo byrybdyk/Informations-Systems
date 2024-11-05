@@ -1,44 +1,50 @@
 package com.byrybdyk.lb1.controller;
 
 import com.byrybdyk.lb1.dto.LabWorkDTO;
-import com.byrybdyk.lb1.model.Discipline;
 import com.byrybdyk.lb1.model.LabWork;
-import com.byrybdyk.lb1.model.Person;
-import com.byrybdyk.lb1.service.DisciplineService;
 import com.byrybdyk.lb1.service.LabWorkService;
-import com.byrybdyk.lb1.service.PersonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @RestController
 @RequestMapping("/labworks")
 public class LabWorkController {
 
-    private final DisciplineService disciplineService;
-    private final PersonService authorService;
     private final LabWorkService labWorkService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public LabWorkController(DisciplineService disciplineService, PersonService authorService, LabWorkService labWorkService) {
-        this.disciplineService = disciplineService;
-        this.authorService = authorService;
+    public LabWorkController(LabWorkService labWorkService, SimpMessagingTemplate messagingTemplate) {
         this.labWorkService = labWorkService;
+        this.messagingTemplate = messagingTemplate;
     }
 
-
-    @PostMapping
+    // Контроллер для добавления нового LabWork через STOMP
+    @MessageMapping("/labworks")
     public ResponseEntity<LabWork> createLabWork(@RequestBody LabWorkDTO labWorkDTO) {
         try {
-            System.out.println("Received LabWorkDTO: " + labWorkDTO);
-            LabWork createdLabWork = labWorkService.createLabWorkFromDTO(labWorkDTO);
-            System.out.println("2222");
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = authentication != null ? authentication.getName() : "anonymous"; // Получаем имя пользователя
+
+            System.out.println("Received LabWorkDTO: " + labWorkDTO + " from user: " + username);
+
+            // Создаем новый LabWork
+            LabWork createdLabWork = labWorkService.createLabWorkFromDTO(labWorkDTO); // Сохранение в БД
+
+            // Отправляем уведомление через WebSocket всем подключённым пользователям
+            messagingTemplate.convertAndSend("/topic/labworks", createdLabWork);  // уведомляем на канале "/topic/labworks"
+
             return new ResponseEntity<>(createdLabWork, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
-
 }

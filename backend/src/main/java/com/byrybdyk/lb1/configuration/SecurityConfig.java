@@ -4,6 +4,7 @@ import com.byrybdyk.lb1.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,12 +12,14 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-
-
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig {
+@EnableWebSocketMessageBroker
+public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
 
     private final UserService userService;
 
@@ -28,12 +31,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf().disable()
+                .cors().disable()  // отключаем CORS
+                .csrf().disable()  // отключаем CSRF для WebSocket
                 .authorizeRequests()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/auth/register", "/auth/login", "/register", "/login").permitAll()
-                .anyRequest().permitAll()
+                .requestMatchers("/ws/**").authenticated() // Доступ к WebSocket только для аутентифицированных пользователей
+                .anyRequest().authenticated() // Все остальные запросы требуют аутентификации
                 .and()
                 .formLogin()
                 .loginPage("/login")
@@ -48,27 +53,12 @@ public class SecurityConfig {
                 .logout()
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout")
-                .permitAll();
+                .permitAll()
+                .and()
+                .headers().frameOptions().sameOrigin();  // если используете H2 или другие встроенные базы данных
+
         return http.build();
-
-//        http
-//                .csrf().disable()
-//                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-//                        .requestMatchers("/login", "/auth/register").permitAll() // Разрешить доступ к логину
-//                        .requestMatchers("/labworks/**").authenticated() // Только для аутентифицированных
-//                        .anyRequest().permitAll()
-//                )
-//                .formLogin(formLogin -> formLogin
-//                        .permitAll()
-//                )
-//                .logout(logout -> logout
-//                        .permitAll()
-//                );
-//
-//        return http.build(); // Возвращаем построенный объект SecurityFilterChain
     }
-
-
 
     @Bean
     public AuthenticationManager authManager(HttpSecurity http) throws Exception {
@@ -81,5 +71,16 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker("/topic");
+        registry.setApplicationDestinationPrefixes("/app");
+    }
+
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint("/ws").withSockJS();
     }
 }

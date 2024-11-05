@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Home</title>
+
+    <!-- Подключение скриптов SockJS и STOMP до вашего собственного кода -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
     <style>
         /* Ограничение размера контейнера для таблицы и добавление прокрутки */
         .table-container {
@@ -64,7 +70,50 @@
             cursor: pointer;
         }
     </style>
+
     <script>
+        var stompClient = null;
+
+        // Создаем подключение к WebSocket
+        function connect() {
+            // Получаем токен аутентификации из cookie или локального хранилища
+            const token = localStorage.getItem('authToken'); // или используйте другой способ получения токена
+
+            var socket = new SockJS('/ws');  // Адрес WebSocket сервера
+            stompClient = Stomp.over(socket);
+
+            // Подключаемся с заголовком Authorization
+            stompClient.connect(
+                { 'Authorization': 'Bearer ' + token },
+                function (frame) {
+                    console.log('Connected: ' + frame);
+
+                    // Подписка на канал WebSocket для получения обновлений
+                    stompClient.subscribe('/user/home', function (message) {
+                        var labWork = JSON.parse(message.body);
+                        onLabWorkUpdate(labWork);  // Обрабатываем обновление
+                    });
+                },
+                function (error) {
+                    console.error('WebSocket connection failed: ' + error);
+                    alert("WebSocket connection failed. Please try again.");
+                }
+            );
+        }
+
+        // Функция для обработки обновлений LabWork
+        function onLabWorkUpdate(labWork) {
+            console.log('LabWork updated:', labWork);
+
+            // Пример добавления новой строки в таблицу
+            var table = document.getElementById("labWorkTable");  // Убедитесь, что у вас есть таблица с таким ID
+            var row = table.insertRow();
+            row.insertCell(0).innerHTML = labWork.name;
+            row.insertCell(1).innerHTML = labWork.description;
+            row.insertCell(2).innerHTML = labWork.difficulty;
+            // И так далее для остальных полей...
+        }
+
         async function addLabWork(event) {
             event.preventDefault(); // Остановить стандартное поведение формы
 
@@ -100,81 +149,22 @@
                 personalQualitiesMinimum: parseFloat(data.personalQualitiesMinimum),
                 personalQualitiesMaximum: parseFloat(data.personalQualitiesMaximum),
                 ownerId: parseInt(data.owner_id),
+                ownerName: document.getElementById("userName").textContent
             };
 
-            const response = await fetch('/labworks', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(labWorkDTO) // Отправляем вложенные объекты
-            });
-
-            if (response.ok) {
-                // Обработка успешного ответа
-            } else {
-                alert('Error add Lab Work');
-            }
+            // Отправка данных на сервер через WebSocket
+            stompClient.send("/app/labworks", {}, JSON.stringify(labWorkDTO)); // WebSocket запрос
         }
 
-        async function updateLabWork(event, labWorkId) {
-            event.preventDefault(); // Предотвращает перезагрузку страницы
-
-            const formData = new FormData(event.target);
-            const data = Object.fromEntries(formData.entries());
-
-            const response = await fetch(`/labworks/${labWorkId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (response.ok) {
-                alert('Lab Work updated successfully!');
-                location.reload(); // Обновление страницы для отображения обновленного элемента
-            } else {
-                alert('Error updating Lab Work');
-            }
-        }
-
-        async function editLabWork(labWorkId) {
-            const response = await fetch(`/labworks/${labWorkId}`);
-            if (response.ok) {
-                const labWork = await response.json();
-                document.getElementById('editLabWorkId').value = labWork.id;
-                document.getElementById('editLabWorkName').value = labWork.name;
-                document.getElementById('editLabWorkDisciplineName').value = labWork.discipline.name; // Добавлено поле discipline name
-                document.getElementById('editLabWorkPracticeHours').value = labWork.discipline.practiceHours; // Добавлено поле practice hours
-                document.getElementById('editLabWorkDescription').value = labWork.description;
-                document.getElementById('editLabWorkDifficulty').value = labWork.difficulty;
-                document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x; // Добавлено поле coordinates X
-                document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y; // Добавлено поле coordinates Y
-                document.getElementById('editLabWorkMinimalPoint').value = labWork.minimalPoint;
-                document.getElementById('editLabWorkPersonalQualitiesMax').value = labWork.personalQualitiesMaximum;
-                document.getElementById('editLabWorkPersonalQualitiesMin').value = labWork.personalQualitiesMinimum;
-                document.getElementById('editLabWorkAuthorName').value = labWork.author.name; // Добавлено поле author name
-                document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight; // Добавлено поле author weight
-                document.getElementById('editLabWorkAuthorEyeColor').value = labWork.author.eyeColor; // Добавлено поле author eye color
-                document.getElementById('editLabWorkAuthorHairColor').value = labWork.author.hairColor; // Добавлено поле author hair color
-                document.getElementById('editLabWorkLocationX').value = labWork.author.location.x; // Добавлено поле location X
-                document.getElementById('editLabWorkLocationY').value = labWork.author.location.y; // Добавлено поле location Y
-                document.getElementById('editLabWorkLocationName').value = labWork.author.location.name; // Добавлено поле location name
-                document.getElementById('editLabWorkPassportID').value = labWork.author.passportID; // Добавлено поле passport ID
-                document.getElementById('editModal').style.display = 'block';
-            } else {
-                alert('Error fetching Lab Work data');
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
+        window.onload = function() {
+            connect();
+        };
     </script>
+
 </head>
+
 <body>
-<h1>Welcome, <span th:text="${username}">User</span>!</h1>
+<h1>Welcome, <span th:text="${username}" id="userName">User</span>!</h1>
 <p>This is the user area.</p>
 
 <h2>Add Lab Work</h2>
@@ -201,7 +191,6 @@
 </form>
 
 <h2>LabWork Entities</h2>
-
 <div class="table-container">
     <table>
         <thead>
@@ -233,6 +222,7 @@
         <tbody>
         <tr th:each="labWork : ${labWorks}">
             <td th:text="${labWork.id}"></td>
+            <td th:text="${labWork.owner_id.getUsername()}"></td>
             <td th:text="${labWork.creationDate}"></td>
             <td th:text="${labWork.name}"></td>
             <td th:text="${labWork.discipline.name}"></td>
