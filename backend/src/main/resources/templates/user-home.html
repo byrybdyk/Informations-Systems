@@ -76,42 +76,92 @@
 
         // Создаем подключение к WebSocket
         function connect() {
-            // Получаем токен аутентификации из cookie или локального хранилища
-            const token = localStorage.getItem('authToken'); // или используйте другой способ получения токена
-
             var socket = new SockJS('/ws');  // Адрес WebSocket сервера
             stompClient = Stomp.over(socket);
 
-            // Подключаемся с заголовком Authorization
-            stompClient.connect(
-                { 'Authorization': 'Bearer ' + token },
-                function (frame) {
-                    console.log('Connected: ' + frame);
+            // Подключаемся без заголовка Authorization
+            stompClient.connect({}, function (frame) {
+                console.log('Connected: ' + frame);
 
-                    // Подписка на канал WebSocket для получения обновлений
-                    stompClient.subscribe('/user/home', function (message) {
-                        var labWork = JSON.parse(message.body);
-                        onLabWorkUpdate(labWork);  // Обрабатываем обновление
-                    });
-                },
-                function (error) {
-                    console.error('WebSocket connection failed: ' + error);
-                    alert("WebSocket connection failed. Please try again.");
-                }
-            );
+                stompClient.subscribe('/topic/labworks', function (message) {
+                    var labWork = JSON.parse(message.body);
+                    onLabWorkUpdate(labWork);  // Обрабатываем обновление
+                });
+
+            }, function (error) {
+                console.error('WebSocket connection failed: ' + error);
+                alert("WebSocket connection failed. Please try again.");
+            });
         }
 
         // Функция для обработки обновлений LabWork
         function onLabWorkUpdate(labWork) {
             console.log('LabWork updated:', labWork);
 
-            // Пример добавления новой строки в таблицу
-            var table = document.getElementById("labWorkTable");  // Убедитесь, что у вас есть таблица с таким ID
-            var row = table.insertRow();
-            row.insertCell(0).innerHTML = labWork.name;
-            row.insertCell(1).innerHTML = labWork.description;
-            row.insertCell(2).innerHTML = labWork.difficulty;
-            // И так далее для остальных полей...
+            // Находим таблицу по ID
+            var table = document.getElementById("labWorkTable");
+            var rows = table.getElementsByTagName("tr");
+            var rowUpdated = false;
+
+            // Перебираем все строки в таблице, чтобы найти строку с таким же ID
+            for (var i = 1; i < rows.length; i++) { // Начинаем с 1, чтобы пропустить заголовок
+                var row = rows[i];
+                var cell = row.cells[0];  // Предполагаем, что ID в первой ячейке
+
+                if (cell && cell.innerHTML == labWork.id) {
+                    // Если строка с таким ID уже существует, обновляем её
+                    row.cells[1].innerHTML = labWork.ownerName;
+                    row.cells[2].innerHTML = labWork.creationDate;
+                    row.cells[3].innerHTML = labWork.name;
+                    row.cells[4].innerHTML = labWork.disciplineName;
+                    row.cells[5].innerHTML = labWork.practiceHours;
+                    row.cells[6].innerHTML = labWork.description;
+                    row.cells[7].innerHTML = labWork.difficulty;
+                    row.cells[8].innerHTML = labWork.coordinates.x;
+                    row.cells[9].innerHTML = labWork.coordinates.y;
+                    row.cells[10].innerHTML = labWork.minimalPoint;
+                    row.cells[11].innerHTML = labWork.personalQualitiesMax;
+                    row.cells[12].innerHTML = labWork.personalQualitiesMin;
+                    row.cells[13].innerHTML = labWork.authorName;
+                    row.cells[14].innerHTML = labWork.authorWeight;
+                    row.cells[15].innerHTML = labWork.authorEyeColor;
+                    row.cells[16].innerHTML = labWork.authorHairColor;
+                    row.cells[17].innerHTML = labWork.authorLocation.x;
+                    row.cells[18].innerHTML = labWork.authorLocation.y;
+                    row.cells[19].innerHTML = labWork.authorLocation.name;
+                    row.cells[20].innerHTML = labWork.authorPassportID;
+                    rowUpdated = true;
+                    break;  // Строка найдена, выходим из цикла
+                }
+            }
+
+            // Если строка с таким ID не найдена, добавляем новую
+            if (!rowUpdated) {
+                var newRow = table.insertRow();
+                newRow.insertCell(0).innerHTML = labWork.id;
+                newRow.insertCell(1).innerHTML = labWork.owner_id.username;
+                newRow.insertCell(2).innerHTML = formatUTCDate(labWork.creationDate);
+                newRow.insertCell(3).innerHTML = labWork.name;
+                newRow.insertCell(4).innerHTML = labWork.discipline.name;
+                newRow.insertCell(5).innerHTML = labWork.discipline.practiceHours;
+                newRow.insertCell(6).innerHTML = labWork.description;
+                newRow.insertCell(7).innerHTML = labWork.difficulty;
+                newRow.insertCell(8).innerHTML = labWork.coordinates.x;
+                newRow.insertCell(9).innerHTML = labWork.coordinates.y;
+                newRow.insertCell(10).innerHTML = labWork.minimalPoint;
+                newRow.insertCell(11).innerHTML = labWork.personalQualitiesMaximum;
+                newRow.insertCell(12).innerHTML = labWork.personalQualitiesMinimum;
+                newRow.insertCell(13).innerHTML = labWork.author.name;
+                newRow.insertCell(14).innerHTML = labWork.author.weight;
+                newRow.insertCell(15).innerHTML = labWork.author.eyeColor;
+                newRow.insertCell(16).innerHTML = labWork.author.hairColor;
+                newRow.insertCell(17).innerHTML = labWork.author.location.x;
+                newRow.insertCell(18).innerHTML = labWork.author.location.y;
+                newRow.insertCell(19).innerHTML = labWork.author.location.name;
+                newRow.insertCell(20).innerHTML = labWork.author.passportID;
+                newRow.insertCell(21).innerHTML = '<button onclick="editLabWork(' + labWork.id + ')">Edit</button>';
+            }
+
         }
 
         async function addLabWork(event) {
@@ -159,7 +209,23 @@
         window.onload = function() {
             connect();
         };
+
+        function formatUTCDate(dateString) {
+            let date = new Date(dateString); // Создаем объект Date из строки ISO
+
+            // Форматируем дату в формат: yyyy-MM-dd HH:mm:ss.SSS
+            let formattedDate = date.getUTCFullYear() + "-" +
+                ("0" + (date.getUTCMonth() + 1)).slice(-2) + "-" +
+                ("0" + date.getUTCDate()).slice(-2) + " " +
+                ("0" + date.getUTCHours()).slice(-2) + ":" +
+                ("0" + date.getUTCMinutes()).slice(-2) + ":" +
+                ("0" + date.getUTCSeconds()).slice(-2) + "." +
+                ("00" + date.getUTCMilliseconds()).slice(-3);
+
+            return formattedDate; // Возвращаем отформатированную строку
+        }
     </script>
+
 
 </head>
 
@@ -192,7 +258,7 @@
 
 <h2>LabWork Entities</h2>
 <div class="table-container">
-    <table>
+    <table id="labWorkTable">
         <thead>
         <tr>
             <th>ID</th>

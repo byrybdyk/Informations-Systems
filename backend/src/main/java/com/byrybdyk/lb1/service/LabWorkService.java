@@ -67,8 +67,8 @@ public class LabWorkService {
             User owner = userRepository.findByUsername(userName)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
             mapDtoToLabWork(labWork, labWorkDTO, author, owner);
-
-            return saveLabWork(labWork);
+            saveLabWork(labWork);
+            return labWork;
         } catch (Exception e) {
             System.out.println("Error while creating LabWork: " + e.getMessage());
             throw e; // или можно возвращать null, в зависимости от вашей логики

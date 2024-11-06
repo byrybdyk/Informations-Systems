@@ -40,7 +40,9 @@ public class LabWorkController {
             LabWork createdLabWork = labWorkService.createLabWorkFromDTO(labWorkDTO); // Сохранение в БД
 
             // Отправляем уведомление через WebSocket всем подключённым пользователям
-            messagingTemplate.convertAndSend("/topic/labworks", createdLabWork);  // уведомляем на канале "/topic/labworks"
+            System.out.println("Sending message to /topic/labworks: " + createdLabWork);
+            messagingTemplate.convertAndSend("/topic/labworks", createdLabWork);
+            System.out.println("Message sent to /topic/labworks.");
 
             return new ResponseEntity<>(createdLabWork, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
