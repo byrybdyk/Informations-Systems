@@ -85,7 +85,11 @@
 
                 stompClient.subscribe('/topic/labworks', function (message) {
                     var labWork = JSON.parse(message.body);
-                    onLabWorkUpdate(labWork);  // Обрабатываем обновление
+                    console.log('---------------------------------' , message)
+                    if (message.body.status !== null){
+                        onLabWorkUpdate(labWork);
+                    }
+                      // Обрабатываем обновление
                 });
 
             }, function (error) {
@@ -102,7 +106,9 @@
             var table = document.getElementById("labWorkTable");
             var rows = table.getElementsByTagName("tr");
             var rowUpdated = false;
-
+            if (labWork.id == null){
+                return
+            }
             // Перебираем все строки в таблице, чтобы найти строку с таким же ID
             for (var i = 1; i < rows.length; i++) { // Начинаем с 1, чтобы пропустить заголовок
                 var row = rows[i];

@@ -44,7 +44,7 @@ public class LabWorkController {
             messagingTemplate.convertAndSend("/topic/labworks", createdLabWork);
             System.out.println("Message sent to /topic/labworks.");
 
-            return new ResponseEntity<>(createdLabWork, HttpStatus.CREATED);
+            return new ResponseEntity<>(HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
