@@ -5,17 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Home</title>
 
-    <!-- Подключение скриптов SockJS и STOMP до вашего собственного кода -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
     <style>
-        /* Ограничение размера контейнера для таблицы и добавление прокрутки */
         .table-container {
             width: 100%;
-            max-height: 400px; /* Ограничение по высоте */
-            overflow: auto; /* Прокрутка по горизонтали и вертикали */
+            max-height: 400px;
+            overflow: auto;
         }
 
         table {
@@ -33,9 +31,8 @@
             background-color: #f2f2f2;
         }
 
-        /* Стили для модального окна */
         .modal {
-            display: none; /* Скрыто по умолчанию */
+            display: none;
             position: fixed;
             z-index: 1;
             left: 0;
@@ -71,12 +68,16 @@
         }
     </style>
 
-    <script>
-        var stompClient = null;
 
-        // Создаем подключение к WebSocket
+    <script th:inline="javascript">
+        var labWorks = /*[[${labWorks}]]*/ [];
+        var stompClient = null;
+        const pageSize = 5;
+        let currentPage = 1;
+        let totalPages = 1;
+
         function connect() {
-            var socket = new SockJS('/ws');  // Адрес WebSocket сервера
+            var socket = new SockJS('/ws');
             stompClient = Stomp.over(socket);
 
             // Подключаемся без заголовка Authorization
@@ -85,98 +86,102 @@
 
                 stompClient.subscribe('/topic/labworks', function (message) {
                     var labWork = JSON.parse(message.body);
-                    console.log('---------------------------------' , message)
-                    if (message.body.status !== null){
+                    console.log('---------------------------------', message);
+                    if (message.body.status !== null) {
                         onLabWorkUpdate(labWork);
                     }
-                      // Обрабатываем обновление
                 });
 
             }, function (error) {
                 console.error('WebSocket connection failed: ' + error);
-                alert("WebSocket connection failed. Please try again.");
             });
         }
 
-        // Функция для обработки обновлений LabWork
         function onLabWorkUpdate(labWork) {
             console.log('LabWork updated:', labWork);
 
-            // Находим таблицу по ID
-            var table = document.getElementById("labWorkTable");
-            var rows = table.getElementsByTagName("tr");
-            var rowUpdated = false;
-            if (labWork.id == null){
-                return
-            }
-            // Перебираем все строки в таблице, чтобы найти строку с таким же ID
-            for (var i = 1; i < rows.length; i++) { // Начинаем с 1, чтобы пропустить заголовок
-                var row = rows[i];
-                var cell = row.cells[0];  // Предполагаем, что ID в первой ячейке
-
-                if (cell && cell.innerHTML == labWork.id) {
-                    // Если строка с таким ID уже существует, обновляем её
-                    row.cells[1].innerHTML = labWork.ownerName;
-                    row.cells[2].innerHTML = labWork.creationDate;
-                    row.cells[3].innerHTML = labWork.name;
-                    row.cells[4].innerHTML = labWork.disciplineName;
-                    row.cells[5].innerHTML = labWork.practiceHours;
-                    row.cells[6].innerHTML = labWork.description;
-                    row.cells[7].innerHTML = labWork.difficulty;
-                    row.cells[8].innerHTML = labWork.coordinates.x;
-                    row.cells[9].innerHTML = labWork.coordinates.y;
-                    row.cells[10].innerHTML = labWork.minimalPoint;
-                    row.cells[11].innerHTML = labWork.personalQualitiesMax;
-                    row.cells[12].innerHTML = labWork.personalQualitiesMin;
-                    row.cells[13].innerHTML = labWork.authorName;
-                    row.cells[14].innerHTML = labWork.authorWeight;
-                    row.cells[15].innerHTML = labWork.authorEyeColor;
-                    row.cells[16].innerHTML = labWork.authorHairColor;
-                    row.cells[17].innerHTML = labWork.authorLocation.x;
-                    row.cells[18].innerHTML = labWork.authorLocation.y;
-                    row.cells[19].innerHTML = labWork.authorLocation.name;
-                    row.cells[20].innerHTML = labWork.authorPassportID;
-                    rowUpdated = true;
-                    break;  // Строка найдена, выходим из цикла
-                }
+            if (labWork.id == null) {
+                return;
             }
 
-            // Если строка с таким ID не найдена, добавляем новую
-            if (!rowUpdated) {
-                var newRow = table.insertRow();
-                newRow.insertCell(0).innerHTML = labWork.id;
-                newRow.insertCell(1).innerHTML = labWork.owner_id.username;
-                newRow.insertCell(2).innerHTML = formatUTCDate(labWork.creationDate);
-                newRow.insertCell(3).innerHTML = labWork.name;
-                newRow.insertCell(4).innerHTML = labWork.discipline.name;
-                newRow.insertCell(5).innerHTML = labWork.discipline.practiceHours;
-                newRow.insertCell(6).innerHTML = labWork.description;
-                newRow.insertCell(7).innerHTML = labWork.difficulty;
-                newRow.insertCell(8).innerHTML = labWork.coordinates.x;
-                newRow.insertCell(9).innerHTML = labWork.coordinates.y;
-                newRow.insertCell(10).innerHTML = labWork.minimalPoint;
-                newRow.insertCell(11).innerHTML = labWork.personalQualitiesMaximum;
-                newRow.insertCell(12).innerHTML = labWork.personalQualitiesMinimum;
-                newRow.insertCell(13).innerHTML = labWork.author.name;
-                newRow.insertCell(14).innerHTML = labWork.author.weight;
-                newRow.insertCell(15).innerHTML = labWork.author.eyeColor;
-                newRow.insertCell(16).innerHTML = labWork.author.hairColor;
-                newRow.insertCell(17).innerHTML = labWork.author.location.x;
-                newRow.insertCell(18).innerHTML = labWork.author.location.y;
-                newRow.insertCell(19).innerHTML = labWork.author.location.name;
-                newRow.insertCell(20).innerHTML = labWork.author.passportID;
-                newRow.insertCell(21).innerHTML = '<button onclick="editLabWork(' + labWork.id + ')">Edit</button>';
+            const existingIndex = labWorks.findIndex(item => item.id === labWork.id);
+            if (existingIndex !== -1) {
+                labWorks[existingIndex] = labWork;
+            } else {
+                labWorks.push(labWork);
             }
 
+            renderTable(currentPage);
         }
 
+        function renderTable(page) {
+            totalPages = Math.ceil(labWorks.length / pageSize);
+            const tableBody = document.getElementById('labWorkTableBody');
+            tableBody.innerHTML = "";
+            const start = (page - 1) * pageSize;
+            const end = start + pageSize;
+            console.log('start:', start, 'end:', end);
+            const paginatedItems = labWorks.slice(start, end);
+            console.log(labWorks);
+            console.log(paginatedItems);
+            paginatedItems.forEach(labWork => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+            <td>${labWork.id}</td>
+            <td>${labWork.owner_id.username}</td>
+            <td>${formatUTCDate(labWork.creationDate)}</td>
+            <td>${labWork.name}</td>
+            <td>${labWork.discipline.name}</td>
+            <td>${labWork.discipline.practiceHours}</td>
+            <td>${labWork.description}</td>
+            <td>${labWork.difficulty}</td>
+            <td>${labWork.coordinates.x}</td>
+            <td>${labWork.coordinates.y}</td>
+            <td>${labWork.minimalPoint}</td>
+            <td>${labWork.personalQualitiesMaximum}</td>
+            <td>${labWork.personalQualitiesMinimum}</td>
+            <td>${labWork.author.name}</td>
+            <td>${labWork.author.weight}</td>
+            <td>${labWork.author.eyeColor}</td>
+            <td>${labWork.author.hairColor}</td>
+            <td>${labWork.author.location.x}</td>
+            <td>${labWork.author.location.y}</td>
+            <td>${labWork.author.location.name}</td>
+            <td>${labWork.author.passportID}</td>
+            <td><button onclick="editLabWork(${labWork.id})">Edit</button></td>
+        `;
+                tableBody.appendChild(row);
+            });
+
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable(currentPage);
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable(currentPage);
+            }
+        }
+
+        window.onload = function () {
+            connect();
+            renderTable(currentPage);
+        };
+
         async function addLabWork(event) {
-            event.preventDefault(); // Остановить стандартное поведение формы
+            event.preventDefault();
 
             const formData = new FormData(event.target);
             const data = Object.fromEntries(formData.entries());
 
-            // Создаем вложенные объекты для DTO
             const labWorkDTO = {
                 name: data.name,
                 description: data.description,
@@ -208,28 +213,20 @@
                 ownerName: document.getElementById("userName").textContent
             };
 
-            // Отправка данных на сервер через WebSocket
-            stompClient.send("/app/labworks", {}, JSON.stringify(labWorkDTO)); // WebSocket запрос
+            stompClient.send("/app/labworks", {}, JSON.stringify(labWorkDTO));
         }
 
-        window.onload = function() {
-            connect();
-        };
-
         function formatUTCDate(dateString) {
-            let date = new Date(dateString); // Создаем объект Date из строки ISO
-
-            // Форматируем дату в формат: yyyy-MM-dd HH:mm:ss.SSS
-            let formattedDate = date.getUTCFullYear() + "-" +
+            let date = new Date(dateString);
+            return date.getUTCFullYear() + "-" +
                 ("0" + (date.getUTCMonth() + 1)).slice(-2) + "-" +
                 ("0" + date.getUTCDate()).slice(-2) + " " +
                 ("0" + date.getUTCHours()).slice(-2) + ":" +
                 ("0" + date.getUTCMinutes()).slice(-2) + ":" +
                 ("0" + date.getUTCSeconds()).slice(-2) + "." +
                 ("00" + date.getUTCMilliseconds()).slice(-3);
-
-            return formattedDate; // Возвращаем отформатированную строку
         }
+
     </script>
 
 
@@ -288,41 +285,21 @@
             <th>Location Y</th>
             <th>Location Name</th>
             <th>Passport ID</th>
-            <th>Actions</th> <!-- Добавлено поле для действий -->
+            <th>Actions</th>
         </tr>
         </thead>
-        <tbody>
-        <tr th:each="labWork : ${labWorks}">
-            <td th:text="${labWork.id}"></td>
-            <td th:text="${labWork.owner_id.getUsername()}"></td>
-            <td th:text="${labWork.creationDate}"></td>
-            <td th:text="${labWork.name}"></td>
-            <td th:text="${labWork.discipline.name}"></td>
-            <td th:text="${labWork.discipline.practiceHours}"></td>
-            <td th:text="${labWork.description}"></td>
-            <td th:text="${labWork.difficulty}"></td>
-            <td th:text="${labWork.coordinates.x}"></td>
-            <td th:text="${labWork.coordinates.y}"></td>
-            <td th:text="${labWork.minimalPoint}"></td>
-            <td th:text="${labWork.personalQualitiesMaximum}"></td>
-            <td th:text="${labWork.personalQualitiesMinimum}"></td>
-            <td th:text="${labWork.author.name}"></td>
-            <td th:text="${labWork.author.weight}"></td>
-            <td th:text="${labWork.author.eyeColor}"></td>
-            <td th:text="${labWork.author.hairColor}"></td>
-            <td th:text="${labWork.author.location.x}"></td>
-            <td th:text="${labWork.author.location.y}"></td>
-            <td th:text="${labWork.author.location.name}"></td>
-            <td th:text="${labWork.author.passportID}"></td>
-            <td>
-                <button onclick="editLabWork(${labWork.id})">Edit</button>
-            </td>
-        </tr>
+        <tbody id="labWorkTableBody">
         </tbody>
     </table>
 </div>
 
-<!-- Модальное окно для редактирования Lab Work -->
+<!-- Пагинация -->
+<div id="pagination">
+    <button onclick="previousPage()">Previous</button>
+    <span id="currentPage">1</span> / <span id="totalPages">1</span>
+    <button onclick="nextPage()">Next</button>
+</div>
+
 <div id="editModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeModal()">&times;</span>
