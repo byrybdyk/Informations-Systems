@@ -71,7 +71,39 @@ public class LabWorkService {
             return labWork;
         } catch (Exception e) {
             System.out.println("Error while creating LabWork: " + e.getMessage());
-            throw e; // или можно возвращать null, в зависимости от вашей логики
+            throw e;
+        }
+    }
+
+    public LabWork updateLabWorkFromDTO(LabWorkDTO labWorkDTO) {
+        try {
+            Optional<LabWork> existingLabWorkOpt = labWorkRepository.findById(labWorkDTO.getId());
+
+            if (!existingLabWorkOpt.isPresent()) {
+                throw new IllegalArgumentException("LabWork not found for ID: " + labWorkDTO.getId());
+            }
+
+            LabWork labWork = existingLabWorkOpt.get();
+
+            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthorId(), labWorkDTO.getAuthor());
+            labWork.setAuthor(author);
+
+            Discipline discipline = disciplineService.getOrCreateDiscipline(labWorkDTO.getDiscipline());
+            labWork.setDiscipline(discipline);
+
+            String userName = labWorkDTO.getOwnerName();
+            System.out.println("userName: " + userName);
+            User owner = userRepository.findByUsername(userName)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            mapDtoToLabWork(labWork, labWorkDTO, author, owner);
+
+            saveLabWork(labWork);
+
+            return labWork;
+        } catch (Exception e) {
+            System.out.println("Error while updating LabWork: " + e.getMessage());
+            throw e;
         }
     }
 

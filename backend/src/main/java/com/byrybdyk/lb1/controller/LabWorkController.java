@@ -27,19 +27,27 @@ public class LabWorkController {
         this.messagingTemplate = messagingTemplate;
     }
 
-    // Контроллер для добавления нового LabWork через STOMP
-    @MessageMapping("/labworks")
+    @MessageMapping("/labworks/add")
     public ResponseEntity<LabWork> createLabWork(@RequestBody LabWorkDTO labWorkDTO) {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String username = authentication != null ? authentication.getName() : "anonymous"; // Получаем имя пользователя
+            LabWork createdLabWork = labWorkService.createLabWorkFromDTO(labWorkDTO);
 
-            System.out.println("Received LabWorkDTO: " + labWorkDTO + " from user: " + username);
+            System.out.println("Sending message to /topic/labworks: " + createdLabWork);
+            messagingTemplate.convertAndSend("/topic/labworks", createdLabWork);
+            System.out.println("Message sent to /topic/labworks.");
 
-            // Создаем новый LabWork
-            LabWork createdLabWork = labWorkService.createLabWorkFromDTO(labWorkDTO); // Сохранение в БД
+            return new ResponseEntity<>(HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
 
-            // Отправляем уведомление через WebSocket всем подключённым пользователям
+    @MessageMapping("/labworks/update")
+    public ResponseEntity<LabWork> updateLabWork(@RequestBody LabWorkDTO labWorkDTO) {
+        try {
+
+            LabWork createdLabWork = labWorkService.updateLabWorkFromDTO(labWorkDTO);
+
             System.out.println("Sending message to /topic/labworks: " + createdLabWork);
             messagingTemplate.convertAndSend("/topic/labworks", createdLabWork);
             System.out.println("Message sent to /topic/labworks.");

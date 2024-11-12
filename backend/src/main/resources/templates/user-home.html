@@ -213,8 +213,90 @@
                 ownerName: document.getElementById("userName").textContent
             };
 
-            stompClient.send("/app/labworks", {}, JSON.stringify(labWorkDTO));
+            stompClient.send("/app/labworks/add", {}, JSON.stringify(labWorkDTO));
         }
+
+        function editLabWork(labWorkId) {
+            const labWork = labWorks.find(work => work.id === labWorkId);
+
+            if (!labWork) {
+                alert('Lab Work not found');
+                return;
+            }
+
+            document.getElementById('editLabWorkId').value = labWork.id;
+            document.getElementById('editLabWorkOwnerId').value = labWork.owner_id.username;
+            document.getElementById('editLabWorkName').value = labWork.name;
+            document.getElementById('editLabWorkDisciplineName').value = labWork.discipline.name;
+            document.getElementById('editLabWorkPracticeHours').value = labWork.discipline.practiceHours;
+            document.getElementById('editLabWorkDescription').value = labWork.description;
+            document.getElementById('editLabWorkDifficulty').value = labWork.difficulty;
+            document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x;
+            document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y;
+            document.getElementById('editLabWorkMinimalPoint').value = labWork.minimalPoint;
+            document.getElementById('editLabWorkPersonalQualitiesMax').value = labWork.personalQualitiesMaximum;
+            document.getElementById('editLabWorkPersonalQualitiesMin').value = labWork.personalQualitiesMinimum;
+            document.getElementById('editLabWorkAuthorName').value = labWork.author.name;
+            document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight;
+            document.getElementById('editLabWorkAuthorEyeColor').value = labWork.author.eyeColor;
+            document.getElementById('editLabWorkAuthorHairColor').value = labWork.author.hairColor;
+            document.getElementById('editLabWorkLocationX').value = labWork.author.location.x;
+            document.getElementById('editLabWorkLocationY').value = labWork.author.location.y;
+            document.getElementById('editLabWorkLocationName').value = labWork.author.location.name;
+            document.getElementById('editLabWorkPassportID').value = labWork.author.passportID;
+
+            document.getElementById('editModal').style.display = 'block';
+
+            document.getElementById('updateLabWorkForm').onsubmit = async function(event) {
+                await updateLabWork(event, labWorkId);
+            };
+        }
+
+
+        async function updateLabWork(event, labWorkId) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            const labWorkDTO = {
+                id: labWorkId,
+                name: data.name,
+                description: data.description,
+                difficulty: data.difficulty,
+                coordinates: {
+                    x: parseFloat(data.coordinatesX),
+                    y: parseFloat(data.coordinatesY),
+                },
+                discipline: {
+                    name: data.disciplineName,
+                    practiceHours: parseInt(data.practiceHours),
+                },
+                author: {
+                    name: data.authorName,
+                    weight: parseFloat(data.authorWeight),
+                    eyeColor: data.authorEyeColor,
+                    hairColor: data.authorHairColor,
+                    passportID: data.passportID,
+                    location: {
+                        x: parseFloat(data.locationX),
+                        y: parseFloat(data.locationY),
+                        name: data.locationName,
+                    },
+                },
+                minimalPoint: parseFloat(data.minimalPoint),
+                personalQualitiesMinimum: parseFloat(data.personalQualitiesMinimum),
+                personalQualitiesMaximum: parseFloat(data.personalQualitiesMaximum),
+                ownerId: parseInt(data.owner_id),
+                ownerName: document.getElementById("userName").textContent
+            };
+
+            stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));
+
+            closeModal();
+        }
+
+
 
         function formatUTCDate(dateString) {
             let date = new Date(dateString);
@@ -226,6 +308,11 @@
                 ("0" + date.getUTCSeconds()).slice(-2) + "." +
                 ("00" + date.getUTCMilliseconds()).slice(-3);
         }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
 
     </script>
 
@@ -293,7 +380,6 @@
     </table>
 </div>
 
-<!-- Пагинация -->
 <div id="pagination">
     <button onclick="previousPage()">Previous</button>
     <span id="currentPage">1</span> / <span id="totalPages">1</span>
@@ -306,7 +392,7 @@
         <h2>Edit Lab Work</h2>
         <form id="editLabWorkForm" onsubmit="updateLabWork(event, document.getElementById('editLabWorkId').value)">
             <input type="hidden" id="editLabWorkId" name="id">
-            <input type="text" id="editLabWorkOwnerId" name="owner_id" placeholder="Owner ID" required>
+            <input type="hidden" id="editLabWorkOwnerId" name="owner_id" placeholder="Owner ID" required>
             <input type="text" id="editLabWorkName" name="name" placeholder="Lab Work Name" required>
             <input type="text" id="editLabWorkDisciplineName" name="disciplineName" placeholder="Discipline Name" required>
             <input type="number" id="editLabWorkPracticeHours" name="practiceHours" placeholder="Practice Hours" required>
