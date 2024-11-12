@@ -9,6 +9,9 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
     <style>
         .table-container {
             width: 100%;
@@ -80,7 +83,6 @@
             var socket = new SockJS('/ws');
             stompClient = Stomp.over(socket);
 
-            // Подключаемся без заголовка Authorization
             stompClient.connect({}, function (frame) {
                 console.log('Connected: ' + frame);
 
@@ -216,7 +218,7 @@
             stompClient.send("/app/labworks/add", {}, JSON.stringify(labWorkDTO));
         }
 
-        function editLabWork(labWorkId) {
+        async function editLabWork(labWorkId) {
             const labWork = labWorks.find(work => work.id === labWorkId);
 
             if (!labWork) {
@@ -224,32 +226,69 @@
                 return;
             }
 
-            document.getElementById('editLabWorkId').value = labWork.id;
-            document.getElementById('editLabWorkOwnerId').value = labWork.owner_id.username;
-            document.getElementById('editLabWorkName').value = labWork.name;
-            document.getElementById('editLabWorkDisciplineName').value = labWork.discipline.name;
-            document.getElementById('editLabWorkPracticeHours').value = labWork.discipline.practiceHours;
-            document.getElementById('editLabWorkDescription').value = labWork.description;
-            document.getElementById('editLabWorkDifficulty').value = labWork.difficulty;
-            document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x;
-            document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y;
-            document.getElementById('editLabWorkMinimalPoint').value = labWork.minimalPoint;
-            document.getElementById('editLabWorkPersonalQualitiesMax').value = labWork.personalQualitiesMaximum;
-            document.getElementById('editLabWorkPersonalQualitiesMin').value = labWork.personalQualitiesMinimum;
-            document.getElementById('editLabWorkAuthorName').value = labWork.author.name;
-            document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight;
-            document.getElementById('editLabWorkAuthorEyeColor').value = labWork.author.eyeColor;
-            document.getElementById('editLabWorkAuthorHairColor').value = labWork.author.hairColor;
-            document.getElementById('editLabWorkLocationX').value = labWork.author.location.x;
-            document.getElementById('editLabWorkLocationY').value = labWork.author.location.y;
-            document.getElementById('editLabWorkLocationName').value = labWork.author.location.name;
-            document.getElementById('editLabWorkPassportID').value = labWork.author.passportID;
+            try {
+                const currentUserName = document.getElementById("userName").textContent
 
-            document.getElementById('editModal').style.display = 'block';
+                const response = await fetch(`/labworks/${labWorkId}/can-edit`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
 
-            document.getElementById('updateLabWorkForm').onsubmit = async function(event) {
-                await updateLabWork(event, labWorkId);
-            };
+                if (response.ok) {
+                    const canEdit = await response.json();
+                    if (canEdit) {
+                        document.getElementById('editLabWorkId').value = labWork.id;
+                        document.getElementById('editLabWorkOwnerId').value = labWork.owner_id.username;
+                        document.getElementById('editLabWorkName').value = labWork.name;
+                        document.getElementById('editLabWorkDisciplineName').value = labWork.discipline.name;
+                        document.getElementById('editLabWorkPracticeHours').value = labWork.discipline.practiceHours;
+                        document.getElementById('editLabWorkDescription').value = labWork.description;
+                        document.getElementById('editLabWorkDifficulty').value = labWork.difficulty;
+                        document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x;
+                        document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y;
+                        document.getElementById('editLabWorkMinimalPoint').value = labWork.minimalPoint;
+                        document.getElementById('editLabWorkPersonalQualitiesMax').value = labWork.personalQualitiesMaximum;
+                        document.getElementById('editLabWorkPersonalQualitiesMin').value = labWork.personalQualitiesMinimum;
+                        document.getElementById('editLabWorkAuthorName').value = labWork.author.name;
+                        document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight;
+                        document.getElementById('editLabWorkAuthorEyeColor').value = labWork.author.eyeColor;
+                        document.getElementById('editLabWorkAuthorHairColor').value = labWork.author.hairColor;
+                        document.getElementById('editLabWorkLocationX').value = labWork.author.location.x;
+                        document.getElementById('editLabWorkLocationY').value = labWork.author.location.y;
+                        document.getElementById('editLabWorkLocationName').value = labWork.author.location.name;
+                        document.getElementById('editLabWorkPassportID').value = labWork.author.passportID;
+
+                        document.getElementById('editModal').style.display = 'block';
+
+                        document.getElementById('updateLabWorkForm').onsubmit = async function (event) {
+                            await updateLabWork(event, labWorkId);
+                        };
+                    }
+                }
+                else {
+                    console.error('Error:', response.status);
+
+                    Swal.fire({
+                        title: "<strong>HTML example</strong>",
+                        icon: "error",
+                        html: `
+                            Permission denied. You can only edit your own lab works.
+                        `,
+                        showCloseButton: true,
+                        showCancelButton: false,
+                        focusConfirm: false,
+                        confirmButtonText: `
+                        OK
+                      `,
+                        confirmButtonAriaLabel: "Thumbs up, great!",
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+
         }
 
 

@@ -63,4 +63,9 @@ public class UserService implements UserDetailsService {
     private PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    public User getUserByUsername(String currentUsername) {
+        return userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
 }

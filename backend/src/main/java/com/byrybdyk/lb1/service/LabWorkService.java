@@ -107,4 +107,17 @@ public class LabWorkService {
         }
     }
 
+    public boolean canThisUserEditLabWork(LabWork labWork, String currentUsername) {
+        try {
+            User currentUser = userService.getUserByUsername(currentUsername);
+            return labWork.getOwner_id().getId() == currentUser.getId() || currentUser.getRole().equals(currentUser.getRole().ADMIN);
+        } catch (Exception e) {
+            System.out.println("Error while checking edit permissions: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public Optional<LabWork> findById(Long labWorkId) {
+        return labWorkRepository.findById(labWorkId);
+    }
 }

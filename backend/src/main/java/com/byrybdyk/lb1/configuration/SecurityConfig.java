@@ -31,14 +31,15 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors().disable()  // отключаем CORS
-                .csrf().disable()  // отключаем CSRF для WebSocket
+                .cors().disable()
+                .csrf().disable()
                 .authorizeRequests()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/labworks/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/auth/register", "/auth/login", "/register", "/login").permitAll()
-                .requestMatchers("/ws/**").authenticated() // Доступ к WebSocket только для аутентифицированных пользователей
-                .anyRequest().authenticated() // Все остальные запросы требуют аутентификации
+                .requestMatchers("/ws/**").authenticated()
+                .anyRequest().authenticated()
                 .and()
                 .formLogin()
                 .loginPage("/login")
@@ -55,7 +56,7 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
                 .logoutSuccessUrl("/login?logout")
                 .permitAll()
                 .and()
-                .headers().frameOptions().sameOrigin();  // если используете H2 или другие встроенные базы данных
+                .headers().frameOptions().sameOrigin();
 
         return http.build();
     }
