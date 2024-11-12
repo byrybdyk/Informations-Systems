@@ -327,7 +327,7 @@
                 personalQualitiesMinimum: parseFloat(data.personalQualitiesMinimum),
                 personalQualitiesMaximum: parseFloat(data.personalQualitiesMaximum),
                 ownerId: parseInt(data.owner_id),
-                ownerName: document.getElementById("userName").textContent
+                ownerName: parseInt(data.ownerName)
             };
 
             stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));

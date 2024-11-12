@@ -68,4 +68,10 @@ public class UserService implements UserDetailsService {
         return userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
+
+    public User getCurrentAuthenticatedUser() {
+        String currentUsername = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
 }

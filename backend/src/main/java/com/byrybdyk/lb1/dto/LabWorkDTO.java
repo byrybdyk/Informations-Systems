@@ -13,7 +13,7 @@ public class LabWorkDTO {
     private String description;
     private Difficulty difficulty;
     private Long id;
-    private Coordinates coordinates;
+
     private Date creationDate;
     private Discipline discipline;
     private Float minimalPoint;
@@ -22,6 +22,9 @@ public class LabWorkDTO {
 
     private Long authorId;
     private Person author;
+
+    private Coordinates coordinates;
+    private Long coordinatesId;
 
     private Long ownerId;
     private User owner;
@@ -149,5 +152,13 @@ public class LabWorkDTO {
 
     public void setOwnerName(String ownerName) {
         this.ownerName = ownerName;
+    }
+
+    public Long getCoordinatesId() {
+        return coordinatesId;
+    }
+
+    public void setCoordinatesId(Long coordinatesId) {
+        this.coordinatesId = coordinatesId;
     }
 }

@@ -12,6 +12,7 @@
     import org.springframework.security.core.Authentication;
     import org.springframework.security.core.context.SecurityContextHolder;
 
+    import java.security.Principal;
     import java.util.Optional;
 
     @RestController
@@ -43,10 +44,10 @@
         }
 
         @MessageMapping("/labworks/update")
-        public ResponseEntity<LabWork> updateLabWork(@RequestBody LabWorkDTO labWorkDTO) {
+        public ResponseEntity<LabWork> updateLabWork(@RequestBody LabWorkDTO labWorkDTO, Principal principal) {
             try {
-
-                LabWork createdLabWork = labWorkService.updateLabWorkFromDTO(labWorkDTO);
+                String username = principal.getName();
+                LabWork createdLabWork = labWorkService.updateLabWorkFromDTO(labWorkDTO, username);
 
                 System.out.println("Sending message to /topic/labworks: " + createdLabWork);
                 messagingTemplate.convertAndSend("/topic/labworks", createdLabWork);
