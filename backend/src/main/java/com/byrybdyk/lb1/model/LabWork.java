@@ -17,7 +17,7 @@ public class LabWork {
     @Column(nullable = false)
     private String name;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @ManyToOne(optional = false)
     @JoinColumn(name = "coordinates_id", nullable = false)
     private Coordinates coordinates;
 
