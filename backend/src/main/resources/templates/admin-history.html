@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Home</title>
+    <style>
+        .table-container {
+            width: 100%;
+            max-height: 400px;
+            overflow: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+
+    <script th:inline="javascript">
+        let labWorks = /*[[${historyList}]]*/ [];
+        const pageSize = 5;
+        let currentPage = 1;
+        let totalPages = 1;
+
+        function renderTable(page) {
+            totalPages = Math.ceil(labWorks.length / pageSize);
+            const tableBody = document.getElementById('labWorkTableBody');
+            tableBody.innerHTML = "";
+            const start = (page - 1) * pageSize;
+            const end = start + pageSize;
+            const paginatedItems = labWorks.slice(start, end);
+
+            paginatedItems.forEach(labWork => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${labWork.id}</td>
+                    <td>${labWork.owner_id?.username || 'N/A'}</td>
+                    <td>${formatDate(labWork.creationDate)}</td>
+                    <td>${labWork.name}</td>
+                    <td>${labWork.discipline.name}</td>
+                    <td>${labWork.discipline.practiceHours}</td>
+                    <td>${labWork.description}</td>
+                    <td>${labWork.difficulty}</td>
+                    <td>${labWork.coordinates.x}</td>
+                    <td>${labWork.coordinates.y}</td>
+                    <td>${labWork.minimalPoint}</td>
+                    <td>${labWork.personalQualitiesMaximum}</td>
+                    <td>${labWork.personalQualitiesMinimum}</td>
+                    <td>${labWork.changeType}</td>
+                    <td>${labWork.changedBy?.username || 'N/A'}</td>
+                    <td>${formatDate(labWork.updateTime)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable(currentPage);
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable(currentPage);
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+
+        window.onload = function () {
+            renderTable(currentPage);
+        };
+    </script>
+</head>
+<body>
+<h1>Welcome, <span th:text="${username}" id="adminName">Admin</span>!</h1>
+<h2>LabWork Entities</h2>
+
+<div class="table-container">
+    <table id="labWorkTable">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Owner</th>
+            <th>Creation Date</th>
+            <th>Name</th>
+            <th>Discipline Name</th>
+            <th>Practice Hours</th>
+            <th>Description</th>
+            <th>Difficulty</th>
+            <th>Coordinates X</th>
+            <th>Coordinates Y</th>
+            <th>Minimal Point</th>
+            <th>Personal Qualities Max</th>
+            <th>Personal Qualities Min</th>
+            <th>Change Type</th>
+            <th>Changed By</th>
+            <th>Update Time</th>
+        </tr>
+        </thead>
+        <tbody id="labWorkTableBody"></tbody>
+    </table>
+</div>
+
+<div id="pagination">
+    <button onclick="previousPage()">Previous</button>
+    <span id="currentPage">1</span> / <span id="totalPages">1</span>
+    <button onclick="nextPage()">Next</button>
+</div>
+<a href="/admin/home">Back to home</a>
+
+</body>
+</html>
