@@ -3,14 +3,13 @@ package com.byrybdyk.lb1.service;
 import com.byrybdyk.lb1.dto.LabWorkDTO;
 import com.byrybdyk.lb1.model.*;
 import com.byrybdyk.lb1.model.enums.ChangeType;
-import com.byrybdyk.lb1.repository.CoordinatesRepository;
-import com.byrybdyk.lb1.repository.LabWorkHistoryRepository;
-import com.byrybdyk.lb1.repository.LabWorkRepository;
-import com.byrybdyk.lb1.repository.UserRepository;
+import com.byrybdyk.lb1.model.enums.Difficulty;
+import com.byrybdyk.lb1.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -28,9 +27,10 @@ public class LabWorkService {
     private final UserService userService;
     private final CoordinatesRepository coordinatesRepository;
     private final CoordinatesService coordinatesService;
+    private final PersonRepository personRepository;
 
     @Autowired
-    public LabWorkService(LabWorkRepository labWorkRepository, LabWorkHistoryRepository labWorkHistoryRepository, DisciplineService disciplineService, PersonService authorService, UserRepository userRepository, UserService userService, CoordinatesRepository coordinatesRepository, CoordinatesService coordinatesService) {
+    public LabWorkService(LabWorkRepository labWorkRepository, LabWorkHistoryRepository labWorkHistoryRepository, DisciplineService disciplineService, PersonService authorService, UserRepository userRepository, UserService userService, CoordinatesRepository coordinatesRepository, CoordinatesService coordinatesService, PersonRepository personRepository) {
         this.labWorkRepository = labWorkRepository;
         this.labWorkHistoryRepository = labWorkHistoryRepository;
         this.disciplineService = disciplineService;
@@ -39,6 +39,7 @@ public class LabWorkService {
         this.userService = userService;
         this.coordinatesRepository = coordinatesRepository;
         this.coordinatesService = coordinatesService;
+        this.personRepository = personRepository;
     }
 
     public LabWork saveLabWork(LabWork labWork) {
@@ -65,13 +66,15 @@ public class LabWorkService {
         try {
             LabWork labWork = new LabWork();
 
-            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthor().getId() , labWorkDTO.getAuthor());
+//            System.out.println("AuthorId " + labWorkDTO.getAuthor().getId() + " AuthorID " + labWorkDTO.getAuthorId());
+            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthorId() , labWorkDTO.getAuthor());
             labWork.setAuthor(author);
 
             Discipline discipline = disciplineService.getOrCreateDiscipline(labWorkDTO.getDiscipline());
             labWork.setDiscipline(discipline);
 
-            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinates().getId(), labWorkDTO.getCoordinates());
+//            System.out.println("CoordinatesId " + labWorkDTO.getCoordinates().getId() + " CoordinatesId " + labWorkDTO.getCoordinatesId());
+            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinatesId(), labWorkDTO.getCoordinates());
             labWork.setCoordinates(coordinates);
 
             String userName = labWorkDTO.getOwnerName();
@@ -176,15 +179,45 @@ public class LabWorkService {
         labWorkHistoryRepository.save(history);
     }
 
-    public long countByAuthorLessThan(String author) {
-        return labWorkRepository.countByAuthorNameLessThan(author);
+    public void deleteByAuthor(String author) {
+        Person person = personRepository.findByName(author)
+                .orElseThrow(() -> new RuntimeException("Person not found"));
+
+        List<LabWork> labWorks = labWorkRepository.findByAuthor(person);
+        if (!labWorks.isEmpty()) {
+            labWorkRepository.deleteAll(labWorks);
+        }
     }
+
+
+    public long countByAuthorLessThan(String authorName) {
+        return labWorkRepository.countByAuthorNameLessThan(authorName);
+    }
+
 
     public List<LabWork> findByDescriptionPrefix(String prefix) {
         return labWorkRepository.findByDescriptionStartingWith(prefix);
     }
 
-    public void deleteByAuthor(String author) {
-        labWorkRepository.deleteByAuthorName(author);
+
+    @Transactional
+    public void decreaseDifficulty(Long labWorkId, int steps) {
+        LabWork labWork = labWorkRepository.findById(labWorkId)
+                .orElseThrow(() -> new IllegalArgumentException("LabWork not found with id: " + labWorkId));
+
+        int newDifficultyLevel = Math.max(labWork.getDifficulty().ordinal() - steps, 0);
+        labWork.setDifficulty(Difficulty.values()[newDifficultyLevel]);
+
+        labWorkRepository.save(labWork);
+    }
+
+
+    @Transactional
+    public void removeFromDiscipline(Long labWorkId) {
+        LabWork labWork = labWorkRepository.findById(labWorkId)
+                .orElseThrow(() -> new IllegalArgumentException("LabWork not found with id: " + labWorkId));
+
+        labWork.setDiscipline(null);
+        labWorkRepository.save(labWork);
     }
 }
