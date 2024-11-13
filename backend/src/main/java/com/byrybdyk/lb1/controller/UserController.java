@@ -37,4 +37,13 @@ public class UserController {
         return "user-home";
     }
 
+    @GetMapping("/requests")
+    public String showUserRequests(Model model, Authentication authentication) {
+
+        String userName = authentication.getName();
+        model.addAttribute("username", userName);
+
+        return "user-request";
+    }
+
 }
