@@ -64,15 +64,14 @@ public class LabWorkService {
     public LabWork createLabWorkFromDTO(LabWorkDTO labWorkDTO) {
         try {
             LabWork labWork = new LabWork();
-            System.out.println("AuthorId " + labWorkDTO.getAuthor().getId() + " AuthorID " + labWorkDTO.getAuthorId());
-            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthorId() , labWorkDTO.getAuthor());
+
+            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthor().getId() , labWorkDTO.getAuthor());
             labWork.setAuthor(author);
 
             Discipline discipline = disciplineService.getOrCreateDiscipline(labWorkDTO.getDiscipline());
             labWork.setDiscipline(discipline);
 
-            System.out.println("CoordinatesId " + labWorkDTO.getCoordinates().getId() + " CoordinatesId " + labWorkDTO.getCoordinatesId());
-            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinatesId(), labWorkDTO.getCoordinates());
+            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinates().getId(), labWorkDTO.getCoordinates());
             labWork.setCoordinates(coordinates);
 
             String userName = labWorkDTO.getOwnerName();
@@ -103,13 +102,13 @@ public class LabWorkService {
 
             LabWork labWork = existingLabWorkOpt.get();
 
-            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthor().getId(), labWorkDTO.getAuthor());
+            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthorId(), labWorkDTO.getAuthor());
             labWork.setAuthor(author);
 
             Discipline discipline = disciplineService.getOrCreateDiscipline(labWorkDTO.getDiscipline());
             labWork.setDiscipline(discipline);
 
-            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinates().getId(), labWorkDTO.getCoordinates());
+            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinatesId(), labWorkDTO.getCoordinates());
             labWork.setCoordinates(coordinates);
 
             String userName = labWorkDTO.getOwnerName();
@@ -175,5 +174,17 @@ public class LabWorkService {
         history.setCoordinates(labWork.getCoordinates());
         history.setUpdateTime(LocalDateTime.now());
         labWorkHistoryRepository.save(history);
+    }
+
+    public long countByAuthorLessThan(String author) {
+        return labWorkRepository.countByAuthorNameLessThan(author);
+    }
+
+    public List<LabWork> findByDescriptionPrefix(String prefix) {
+        return labWorkRepository.findByDescriptionStartingWith(prefix);
+    }
+
+    public void deleteByAuthor(String author) {
+        labWorkRepository.deleteByAuthorName(author);
     }
 }

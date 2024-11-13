@@ -127,6 +127,35 @@
             }
         }
 
+        @DeleteMapping("/deleteByAuthor/{author}")
+        public ResponseEntity<String> deleteByAuthor(@PathVariable String author) {
+            labWorkService.deleteByAuthor(author);
+            return ResponseEntity.ok("LabWork with author " + author + " deleted.");
+        }
+
+        @GetMapping("/countByAuthor")
+        public ResponseEntity<Long> countByAuthor(@RequestParam String author) {
+            long count = labWorkService.countByAuthorLessThan(author);
+            return ResponseEntity.ok(count);
+        }
+
+        @GetMapping("/findByDescriptionPrefix")
+        public ResponseEntity<List<LabWork>> findByDescriptionPrefix(@RequestParam String prefix) {
+            return ResponseEntity.ok(labWorkService.findByDescriptionPrefix(prefix));
+        }
+
+//        @PostMapping("/decreaseDifficulty")
+//        public ResponseEntity<String> decreaseDifficulty(@RequestParam Long id, @RequestParam int steps) {
+//            labWorkService.decreaseDifficulty(id, steps);
+//            return ResponseEntity.ok("Difficulty decreased by " + steps + " steps.");
+//        }
+//
+//        @DeleteMapping("/removeFromDiscipline")
+//        public ResponseEntity<String> removeFromDiscipline(@RequestParam Long id) {
+//            labWorkService.removeFromDiscipline(id);
+//            return ResponseEntity.ok("LabWork removed from discipline.");
+//        }
+
 
 
     }
