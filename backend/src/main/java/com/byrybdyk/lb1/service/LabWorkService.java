@@ -102,13 +102,13 @@ public class LabWorkService {
 
             LabWork labWork = existingLabWorkOpt.get();
 
-            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthorId(), labWorkDTO.getAuthor());
+            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthor().getId(), labWorkDTO.getAuthor());
             labWork.setAuthor(author);
 
             Discipline discipline = disciplineService.getOrCreateDiscipline(labWorkDTO.getDiscipline());
             labWork.setDiscipline(discipline);
 
-            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinatesId(), labWorkDTO.getCoordinates());
+            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinates().getId(), labWorkDTO.getCoordinates());
             labWork.setCoordinates(coordinates);
 
             String userName = labWorkDTO.getOwnerName();

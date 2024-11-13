@@ -85,6 +85,21 @@
             }
         }
 
+        @GetMapping("/{labWorkId}")
+        public ResponseEntity<LabWork> getLabWorkById(@PathVariable Long labWorkId) {
+            try {
+                Optional<LabWork> labWorkOpt = labWorkService.findById(labWorkId);
+                if (labWorkOpt.isPresent()) {
+                    LabWork labWork = labWorkOpt.get();
+                    return new ResponseEntity<>(labWork, HttpStatus.OK);
+                } else {
+                    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                }
+            } catch (Exception e) {
+                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+
         @GetMapping("/{labWorkId}/can-edit")
         public ResponseEntity<Boolean> canEditLabWork(@PathVariable Long labWorkId, Authentication authentication) {
             try {
@@ -100,6 +115,7 @@
                 System.out.println("LabWork ID: " + labWork.getId() + ", Owner ID: " + labWork.getOwner_id().getId());
 
                 boolean canEdit = labWorkService.canThisUserEditLabWork(labWork, currentUsername);
+                System.out.println("Can edit ПОЛУЧЕН" + canEdit);
                 if (canEdit) {
                     return new ResponseEntity<>(true, HttpStatus.OK);
                 } else {

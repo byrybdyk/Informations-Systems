@@ -122,10 +122,8 @@
             tableBody.innerHTML = "";
             const start = (page - 1) * pageSize;
             const end = start + pageSize;
-            console.log('start:', start, 'end:', end);
             const paginatedItems = labWorks.slice(start, end);
-            console.log(labWorks);
-            console.log(paginatedItems);
+
             paginatedItems.forEach(labWork => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -150,7 +148,7 @@
             <td>${labWork.author.location.y}</td>
             <td>${labWork.author.location.name}</td>
             <td>${labWork.author.passportID}</td>
-            <td><button onclick="editLabWork(${labWork.id})">Edit</button></td>
+            <td><button onclick="openEditModal(${labWork.id})">Edit</button></td>
         `;
                 tableBody.appendChild(row);
             });
@@ -231,8 +229,16 @@
         }
 
 
-        async function editLabWork(labWorkId) {
-            const labWork = labWorks.find(work => work.id === labWorkId);
+        async function editLabWork(event) {
+            event.preventDefault();  // Чтобы форма не отправлялась
+
+            const form = event.target;  // Получаем форму
+            const labWorkId = form.querySelector('[data-id]').getAttribute('data-id');  // Извлекаем labWorkId
+
+            alert("labWorkId: " + labWorkId);
+
+            // Находим labWork в коллекции labWorks по ID
+            const labWork = labWorks.find(work => work.id === Number(labWorkId));  // Преобразуем в число для сравнения
 
             if (!labWork) {
                 alert('Lab Work not found');
@@ -240,8 +246,9 @@
             }
 
             try {
-                const currentUserName = document.getElementById("userName").textContent
+                const currentUserName = document.getElementById("userName").textContent;
 
+                // Проверяем, может ли текущий пользователь редактировать эту работу
                 const response = await fetch(`/labworks/${labWorkId}/can-edit`, {
                     method: 'GET',
                     headers: {
@@ -252,65 +259,199 @@
                 if (response.ok) {
                     const canEdit = await response.json();
                     if (canEdit) {
+                        // Заполняем поля формы с данными labWork
                         document.getElementById('editLabWorkId').value = labWork.id;
-                        document.getElementById('editLabWorkOwnerId').value = labWork.owner_id.username;
                         document.getElementById('editLabWorkName').value = labWork.name;
-                        document.getElementById('editLabWorkDisciplineName').value = labWork.discipline.name;
-                        document.getElementById('editLabWorkPracticeHours').value = labWork.discipline.practiceHours;
                         document.getElementById('editLabWorkDescription').value = labWork.description;
                         document.getElementById('editLabWorkDifficulty').value = labWork.difficulty;
-                        document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x;
-                        document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y;
                         document.getElementById('editLabWorkMinimalPoint').value = labWork.minimalPoint;
                         document.getElementById('editLabWorkPersonalQualitiesMax').value = labWork.personalQualitiesMaximum;
                         document.getElementById('editLabWorkPersonalQualitiesMin').value = labWork.personalQualitiesMinimum;
-                        document.getElementById('editLabWorkAuthorName').value = labWork.author.name;
-                        document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight;
-                        document.getElementById('editLabWorkAuthorEyeColor').value = labWork.author.eyeColor;
-                        document.getElementById('editLabWorkAuthorHairColor').value = labWork.author.hairColor;
-                        document.getElementById('editLabWorkLocationX').value = labWork.author.location.x;
-                        document.getElementById('editLabWorkLocationY').value = labWork.author.location.y;
-                        document.getElementById('editLabWorkLocationName').value = labWork.author.location.name;
-                        document.getElementById('editLabWorkPassportID').value = labWork.author.passportID;
 
+                        // Заполняем поля для координат
+                        if (labWork.coordinates) {
+                            document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x;
+                            document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y;
+                        }
+
+                        // Проверка наличия дисциплины
+                        if (labWork.disciplines && labWork.disciplines.length > 0) {
+                            populateSelectEditOptions('editLabWorkDisciplineId', labWork.disciplines, 'name', labWork.discipline ? labWork.discipline.id : null);
+                        }
+
+                        // Проверка наличия авторов
+                        if (labWork.authors && labWork.authors.length > 0) {
+                            populateSelectEditOptions('editLabWorkAuthorId', labWork.authors, 'name', labWork.author ? labWork.author.id : null);
+                        }
+
+                        // Проверка наличия локации
+                        if (labWork.locations && labWork.locations.length > 0) {
+                            populateSelectEditOptions('editLabWorkLocationId', labWork.locations, 'name', labWork.location ? labWork.location.id : null);
+                        }
+
+                        // Заполняем дополнительные данные для автора, если он существует
+                        if (labWork.author) {
+                            if (document.getElementById('editLabWorkAuthorName')) {
+                                document.getElementById('editLabWorkAuthorName').value = labWork.author.name || '';
+                            }
+                            if (document.getElementById('editLabWorkAuthorWeight')) {
+                                document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight || '';
+                            }
+                            if (document.getElementById('editLabWorkAuthorEyeColor')) {
+                                document.getElementById('editLabWorkAuthorEyeColor').value = labWork.author.eyeColor || '';
+                            }
+                            if (document.getElementById('editLabWorkAuthorHairColor')) {
+                                document.getElementById('editLabWorkAuthorHairColor').value = labWork.author.hairColor || '';
+                            }
+
+                            if (labWork.author.location) {
+                                if (document.getElementById('editLabWorkLocationX')) {
+                                    document.getElementById('editLabWorkLocationX').value = labWork.author.location.x || '';
+                                }
+                                if (document.getElementById('editLabWorkLocationY')) {
+                                    document.getElementById('editLabWorkLocationY').value = labWork.author.location.y || '';
+                                }
+                                if (document.getElementById('editLabWorkLocationName')) {
+                                    document.getElementById('editLabWorkLocationName').value = labWork.author.location.name || '';
+                                }
+                            }
+
+                            if (document.getElementById('editLabWorkPassportID')) {
+                                document.getElementById('editLabWorkPassportID').value = labWork.author.passportID || '';
+                            }
+                        }
+
+                        // Делаем модальное окно видимым
                         document.getElementById('editModal').style.display = 'block';
 
-                        document.getElementById('updateLabWorkForm').onsubmit = async function (event) {
-                            await updateLabWork(event, labWorkId);
-                        };
+                        updateLabWork(event, labWork.id);
+                    } else {
+                        console.error('Permission denied to edit this lab work');
+                        Swal.fire({
+                            title: "Permission Denied",
+                            icon: "error",
+                            text: "You can only edit your own lab works.",
+                            confirmButtonText: "OK",
+                        });
                     }
-                }
-                else {
-                    console.error('Error:', response.status);
-
+                } else {
+                    console.error('Error checking edit permissions:', response.status);
                     Swal.fire({
-                        title: "<strong>HTML example</strong>",
+                        title: "Error",
                         icon: "error",
-                        html: `
-                            Permission denied. You can only edit your own lab works.
-                        `,
-                        showCloseButton: true,
-                        showCancelButton: false,
-                        focusConfirm: false,
-                        confirmButtonText: `
-                        OK
-                      `,
-                        confirmButtonAriaLabel: "Thumbs up, great!",
+                        text: "Could not check permissions for editing this Lab Work.",
+                        confirmButtonText: "OK",
                     });
                 }
             } catch (error) {
                 console.error('Error:', error);
+                Swal.fire({
+                    title: "Error",
+                    icon: "error",
+                    text: "An error occurred while trying to edit the Lab Work.",
+                    confirmButtonText: "OK",
+                });
             }
+        }
 
+
+
+
+
+        async function openEditModal(labWorkId) {
+            // Показываем модальное окно
+            document.getElementById('editModal').style.display = 'block';
+
+            try {
+                // Получаем данные о labWork
+                const response = await fetch(`/labworks/${labWorkId}`);
+                const labWork = await response.json();
+
+                if (!labWork) {
+                    console.error('Lab work data not found');
+                    return;
+                }
+
+                // Заполняем поля формы с текущими значениями labWork
+                const labWorkIdInput = document.getElementById('editLabWorkId');
+                if (labWorkIdInput) {
+                    labWorkIdInput.value = labWork.id;
+                    labWorkIdInput.setAttribute('data-id', labWork.id);
+                }
+
+                document.getElementById('editLabWorkName').value = labWork.name || '';
+                document.getElementById('editLabWorkDescription').value = labWork.description || '';
+                document.getElementById('editLabWorkDifficulty').value = labWork.difficulty || '';
+                document.getElementById('editLabWorkMinimalPoint').value = labWork.minimalPoint || '';
+                document.getElementById('editLabWorkPersonalQualitiesMax').value = labWork.personalQualitiesMaximum || '';
+                document.getElementById('editLabWorkPersonalQualitiesMin').value = labWork.personalQualitiesMinimum || '';
+
+                if (labWork.coordinates) {
+                    document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x || '';
+                    document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y || '';
+                }
+
+                if (labWork.author) {
+                    document.getElementById('editLabWorkPassportID').value = labWork.author.passportID || '';
+                }
+
+                // Получаем данные для выпадающих списков
+                const formDataResponse = await fetch('/labworks/form-data');
+                const data = await formDataResponse.json();
+
+                // Проверяем, что данные для выпадающих списков существуют
+                if (data && data.disciplines) {
+                    populateSelectEditOptions('editLabWorkDisciplineId', data.disciplines, 'name', labWork.discipline ? labWork.discipline.id : null);
+                }
+
+                if (data && data.coordinates) {
+                    populateSelectEditOptions('editLabWorkCoordinatesId', data.coordinates, coord => `X: ${coord.x}, Y: ${coord.y}`, labWork.coordinates ? labWork.coordinates.id : null);
+                }
+
+                if (data && data.authors) {
+                    populateSelectEditOptions('editLabWorkAuthorId', data.authors, 'name', labWork.author ? labWork.author.id : null);
+                }
+
+                if (data && data.locations) {
+                    populateSelectEditOptions('editLabWorkLocationId', data.locations, 'name', labWork.author && labWork.author.location ? labWork.author.location.id : null);
+                }
+
+                // Заполняем данные для автора
+                if (labWork.author) {
+                    document.getElementById('editLabWorkAuthorName').value = labWork.author.name || '';
+                    document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight || '';
+                    document.getElementById('editLabWorkAuthorEyeColor').value = labWork.author.eyeColor || '';
+                    document.getElementById('editLabWorkAuthorHairColor').value = labWork.author.hairColor || '';
+
+                    if (labWork.author.location) {
+                        document.getElementById('editLabWorkLocationX').value = labWork.author.location.x || '';
+                        document.getElementById('editLabWorkLocationY').value = labWork.author.location.y || '';
+                        document.getElementById('editLabWorkLocationName').value = labWork.author.location.name || '';
+                    }
+
+                    document.getElementById('editLabWorkPassportID').value = labWork.author.passportID || '';
+                }
+
+            } catch (error) {
+                console.error('Error fetching lab work data:', error);
+                alert("Error loading data for lab work");
+            }
+        }
+
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
         }
 
 
         async function updateLabWork(event, labWorkId) {
             event.preventDefault();
 
-            const formData = new FormData(event.target);
+            // Извлекаем данные из формы
+            const formData = new FormData(document.getElementById('editLabWorkForm'));
             const data = Object.fromEntries(formData.entries());
 
+            // Структурируем данные для отправки
             const labWorkDTO = {
                 id: labWorkId,
                 name: data.name,
@@ -340,11 +481,13 @@
                 minimalPoint: parseFloat(data.minimalPoint),
                 personalQualitiesMinimum: parseFloat(data.personalQualitiesMinimum),
                 personalQualitiesMaximum: parseFloat(data.personalQualitiesMaximum),
-                ownerName: parseInt(data.ownerName)
+                ownerName: data.ownerName
             };
 
+            // Отправляем данные через WebSocket
             stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));
 
+            // Закрываем модальное окно
             closeModal();
         }
 
@@ -428,14 +571,45 @@
             document.getElementById('addLabWorkModal').style.display = 'none';
         }
 
-        function populateSelectOptions(selectId, items, textGetter) {
-            const selectElement = document.querySelector(`[name=${selectId}]`);
-            selectElement.innerHTML = '<option value="">-- Select --</option>';
+        function populateSelectEditOptions(elementId, options, labelKey, selectedValue) {
+            const selectElement = document.getElementById(elementId);
+            if (!selectElement || !options) return;
 
+            // Очистить текущие опции
+            selectElement.innerHTML = '';
+
+            // Добавить пустую опцию по умолчанию
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Please select';
+            selectElement.appendChild(defaultOption);
+
+            // Добавить новые опции
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.id;
+                optionElement.textContent = option[labelKey] || option.name;
+
+                if (option.id === selectedValue) {
+                    optionElement.selected = true;
+                }
+
+                selectElement.appendChild(optionElement);
+            });
+        }
+
+        function populateSelectOptions(selectId, items, selectedId) {
+            const selectElement = document.querySelector(`[name=${selectId}]`);
+            selectElement.innerHTML = '<option value="">-- Select --</option>'; // Очистка старых опций
+
+            // Создание опций для каждого элемента
             items.forEach(item => {
                 const option = document.createElement('option');
                 option.value = item.id;
-                option.textContent = typeof textGetter === 'function' ? textGetter(item) : item[textGetter];
+                option.textContent = typeof item.name !== 'undefined' ? item.name : `${item.x}, ${item.y}`; // Для координат или других полей
+                if (item.id === selectedId) {
+                    option.selected = true; // Устанавливаем выбранным нужный элемент
+                }
                 selectElement.appendChild(option);
             });
         }
@@ -587,35 +761,108 @@
     <button onclick="nextPage()">Next</button>
 </div>
 
-<div id="editModal" class="modal">
+<div id="editModal" style="display:none;">
     <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
+        <span class="close" onclick="closeEditModal()">&times;</span>
         <h2>Edit Lab Work</h2>
-        <form id="editLabWorkForm" onsubmit="updateLabWork(event, document.getElementById('editLabWorkId').value)">
-            <input type="hidden" id="editLabWorkId" name="id">
-            <input type="hidden" id="editLabWorkOwnerId" name="ownerName" placeholder="Owner ID" required>
-            <input type="text" id="editLabWorkName" name="name" placeholder="Lab Work Name" required>
-            <input type="text" id="editLabWorkDisciplineName" name="disciplineName" placeholder="Discipline Name" required>
-            <input type="number" id="editLabWorkPracticeHours" name="practiceHours" placeholder="Practice Hours" required>
-            <input type="text" id="editLabWorkDescription" name="description" placeholder="Description" required>
-            <input type="text" id="editLabWorkDifficulty" name="difficulty" placeholder="Difficulty" required>
-            <input type="number" id="editLabWorkCoordinatesX" name="coordinatesX" placeholder="Coordinates X" required>
-            <input type="number" id="editLabWorkCoordinatesY" name="coordinatesY" placeholder="Coordinates Y" required>
-            <input type="number" id="editLabWorkMinimalPoint" name="minimalPoint" placeholder="Minimal Point" required>
-            <input type="number" id="editLabWorkPersonalQualitiesMax" name="personalQualitiesMaximum" placeholder="Personal Qualities Max" required>
-            <input type="number" id="editLabWorkPersonalQualitiesMin" name="personalQualitiesMinimum" placeholder="Personal Qualities Min" required>
-            <input type="text" id="editLabWorkAuthorName" name="authorName" placeholder="Author Name" required>
-            <input type="number" id="editLabWorkAuthorWeight" name="authorWeight" placeholder="Author Weight" required>
-            <input type="text" id="editLabWorkAuthorEyeColor" name="authorEyeColor" placeholder="Author Eye Color" required>
-            <input type="text" id="editLabWorkAuthorHairColor" name="authorHairColor" placeholder="Author Hair Color" required>
-            <input type="number" id="editLabWorkLocationX" name="locationX" placeholder="Location X" required>
-            <input type="number" id="editLabWorkLocationY" name="locationY" placeholder="Location Y" required>
-            <input type="text" id="editLabWorkLocationName" name="locationName" placeholder="Location Name" required>
-            <input type="text" id="editLabWorkPassportID" name="passportID" placeholder="Passport ID" required>
+        <form id="editLabWorkForm" onsubmit="editLabWork(event)">
+            <!-- Добавляем data-id для передачи labWorkId -->
+            <input type="hidden" id="editLabWorkId" name="id" data-id=""> <!-- Пример для id -->
+
+            <label for="name">Lab Work Name:</label>
+            <input type="text" name="name" id="editLabWorkName" placeholder="Lab Work Name">
+
+            <label for="coordinatesId">Coordinates:</label>
+            <select name="coordinatesId" id="editLabWorkCoordinatesId">
+                <option value="">-- Select Coordinates --</option>
+            </select>
+            <button type="button" onclick="toggleCreateCoordinates()">Create New Coordinates</button>
+
+            <div id="newCoordinatesFields" style="display:none;">
+                <input type="number" id ="editLabWorkCoordinatesX" name="newCoordinatesX" placeholder="New Coordinates X">
+                <input type="number" id ="editLabWorkCoordinatesY" name="newCoordinatesY" placeholder="New Coordinates Y">
+            </div>
+
+            <label for="description">Description:</label>
+            <input type="text" name="description" id="editLabWorkDescription" placeholder="Description">
+
+            <label for="difficulty">Difficulty:</label>
+            <input type="text" name="difficulty" id="editLabWorkDifficulty" placeholder="Difficulty">
+
+            <label for="disciplineId">Discipline:</label>
+            <select name="disciplineId" id="editLabWorkDisciplineId">
+                <option value="">-- Select Discipline --</option>
+            </select>
+            <button type="button" onclick="toggleCreateDiscipline()">Create New Discipline</button>
+
+            <div id="newDisciplineFields" style="display:none;">
+                <input type="text" name="newDisciplineName" placeholder="New Discipline Name">
+                <input type="number" name="newPracticeHours" placeholder="Practice Hours">
+            </div>
+
+            <label for="minimalPoint">Minimal Point:</label>
+            <input type="number" name="minimalPoint" id="editLabWorkMinimalPoint" placeholder="Minimal Point">
+
+            <label for="personalQualitiesMin">Personal Qualities Minimum:</label>
+            <input type="number" name="personalQualitiesMinimum" id="editLabWorkPersonalQualitiesMin" placeholder="Personal Qualities Minimum">
+
+            <label for="personalQualitiesMax">Personal Qualities Maximum:</label>
+            <input type="number" name="personalQualitiesMaximum" id="editLabWorkPersonalQualitiesMax" placeholder="Personal Qualities Maximum">
+
+            <label for="authorId">Author:</label>
+            <select name="authorId" id="editLabWorkAuthorId">
+                <option value="">-- Select Author --</option>
+            </select>
+            <button type="button" onclick="toggleCreateAuthor()">Create New Author</button>
+
+            <div id="newAuthorFields" style="display:none;">
+                <<!-- Для данных автора -->
+                <label for="authorName">Author Name:</label>
+                <input type="text" id="editLabWorkAuthorName" name="authorName" placeholder="Author Name">
+
+                <label for="authorWeight">Author Weight:</label>
+                <input type="number" id="editLabWorkAuthorWeight" name="authorWeight" placeholder="Author Weight">
+
+                <label for="authorEyeColor">Author Eye Color:</label>
+                <input type="text" id="editLabWorkAuthorEyeColor" name="authorEyeColor" placeholder="Author Eye Color">
+
+                <label for="authorHairColor">Author Hair Color:</label>
+                <input type="text" id="editLabWorkAuthorHairColor" name="authorHairColor" placeholder="Author Hair Color">
+
+                <label for="authorLocationX">Author Location X:</label>
+                <input type="number" id="editLabWorkLocationX" name="authorLocationX" placeholder="Location X">
+
+                <label for="authorLocationY">Author Location Y:</label>
+                <input type="number" id="editLabWorkLocationY" name="authorLocationY" placeholder="Location Y">
+
+                <label for="authorLocationName">Author Location Name:</label>
+                <input type="text" id="editLabWorkLocationName" name="authorLocationName" placeholder="Location Name">
+
+                <label for="authorPassportID">Author Passport ID:</label>
+                <input type="text" id="editLabWorkPassportID" name="authorPassportID" placeholder="Passport ID">
+
+            </div>
+
+            <label for="locationId">Location:</label>
+            <select name="locationId" id="editLabWorkLocationId">
+                <option value="">-- Select Location --</option>
+            </select>
+            <button type="button" onclick="toggleCreateLocation()">Create New Location</button>
+
+            <div id="newLocationFields" style="display:none;">
+                <input type="number" name="newLocationX" placeholder="New Location X">
+                <input type="number" name="newLocationY" placeholder="New Location Y">
+                <input type="text" name="newLocationName" placeholder="New Location Name">
+            </div>
+
+            <input type="text" name="passportID" placeholder="Passport ID" id="editLabWorkPassportID">
+
             <button type="submit">Update Lab Work</button>
         </form>
     </div>
 </div>
+
+
 
 <a href="/logout">Logout</a>
 </body>
