@@ -211,11 +211,11 @@
                 minimalPoint: parseFloat(data.minimalPoint),
                 personalQualitiesMinimum: parseFloat(data.personalQualitiesMinimum),
                 personalQualitiesMaximum: parseFloat(data.personalQualitiesMaximum),
-                ownerId: parseInt(data.owner_id),
                 ownerName: document.getElementById("userName").textContent
             };
 
             stompClient.send("/app/labworks/add", {}, JSON.stringify(labWorkDTO));
+            closeAddModal();
         }
 
         async function editLabWork(labWorkId) {
@@ -351,6 +351,14 @@
             document.getElementById('editModal').style.display = 'none';
         }
 
+        function openAddModal() {
+            document.getElementById('addLabWorkModal').style.display = 'block';
+        }
+
+        function closeAddModal() {
+            document.getElementById('addLabWorkModal').style.display = 'none';
+        }
+
 
     </script>
 
@@ -361,28 +369,35 @@
 <h1>Welcome, <span th:text="${username}" id="userName">User</span>!</h1>
 <p>This is the user area.</p>
 
-<h2>Add Lab Work</h2>
-<form id="addLabWorkForm" onsubmit="addLabWork(event)">
-    <input type="text" name="name" placeholder="Lab Work Name" required>
-    <input type="text" name="disciplineName" placeholder="Discipline Name" required>
-    <input type="number" name="practiceHours" placeholder="Practice Hours" required>
-    <input type="text" name="description" placeholder="Description" required>
-    <input type="text" name="difficulty" placeholder="Difficulty" required>
-    <input type="number" name="coordinatesX" placeholder="Coordinates X" required>
-    <input type="number" name="coordinatesY" placeholder="Coordinates Y" required>
-    <input type="number" name="minimalPoint" placeholder="Minimal Point" required>
-    <input type="number" name="personalQualitiesMaximum" placeholder="Personal Qualities Max" required>
-    <input type="number" name="personalQualitiesMinimum" placeholder="Personal Qualities Min" required>
-    <input type="text" name="authorName" placeholder="Author Name" required>
-    <input type="number" name="authorWeight" placeholder="Author Weight" required>
-    <input type="text" name="authorEyeColor" placeholder="Author Eye Color" required>
-    <input type="text" name="authorHairColor" placeholder="Author Hair Color" required>
-    <input type="number" name="locationX" placeholder="Location X" required>
-    <input type="number" name="locationY" placeholder="Location Y" required>
-    <input type="text" name="locationName" placeholder="Location Name" required>
-    <input type="text" name="passportID" placeholder="Passport ID" required>
-    <button type="submit">Add Lab Work</button>
-</form>
+<button onclick="openAddModal()">Add Lab Work</button>
+<div id="addLabWorkModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddModal()">&times;</span>
+        <h2>Add Lab Work</h2>
+        <form id="addLabWorkForm" onsubmit="addLabWork(event)">
+            <input type="text" name="name" placeholder="Lab Work Name" required>
+            <input type="text" name="disciplineName" placeholder="Discipline Name" required>
+            <input type="number" name="practiceHours" placeholder="Practice Hours" required>
+            <input type="text" name="description" placeholder="Description" required>
+            <input type="text" name="difficulty" placeholder="Difficulty" required>
+            <input type="number" name="coordinatesX" placeholder="Coordinates X" required>
+            <input type="number" name="coordinatesY" placeholder="Coordinates Y" required>
+            <input type="number" name="minimalPoint" placeholder="Minimal Point" required>
+            <input type="number" name="personalQualitiesMaximum" placeholder="Personal Qualities Max" required>
+            <input type="number" name="personalQualitiesMinimum" placeholder="Personal Qualities Min" required>
+            <input type="text" name="authorName" placeholder="Author Name" required>
+            <input type="number" name="authorWeight" placeholder="Author Weight" required>
+            <input type="text" name="authorEyeColor" placeholder="Author Eye Color" required>
+            <input type="text" name="authorHairColor" placeholder="Author Hair Color" required>
+            <input type="number" name="locationX" placeholder="Location X" required>
+            <input type="number" name="locationY" placeholder="Location Y" required>
+            <input type="text" name="locationName" placeholder="Location Name" required>
+            <input type="text" name="passportID" placeholder="Passport ID" required>
+            <button type="submit">Add Lab Work</button>
+        </form>
+    </div>
+</div>
+
 
 <h2>LabWork Entities</h2>
 <div class="table-container">
