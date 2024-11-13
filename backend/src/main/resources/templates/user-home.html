@@ -181,42 +181,55 @@
         async function addLabWork(event) {
             event.preventDefault();
 
-            const formData = new FormData(event.target);
-            const data = Object.fromEntries(formData.entries());
+            removeRequiredIfHidden();
+
+            const formData = new FormData(document.getElementById('addLabWorkForm'));
 
             const labWorkDTO = {
-                name: data.name,
-                description: data.description,
-                difficulty: data.difficulty,
-                coordinates: {
-                    x: parseFloat(data.coordinatesX),
-                    y: parseFloat(data.coordinatesY),
+                name: formData.get('name'),
+
+                coordinates: formData.get('coordinatesId') ? { id: formData.get('coordinatesId') } : {
+                    x: formData.get('newCoordinatesX'),
+                    y: formData.get('newCoordinatesY')
                 },
-                discipline: {
-                    name: data.disciplineName,
-                    practiceHours: parseInt(data.practiceHours),
+
+                description: formData.get('description'),
+
+                difficulty: formData.get('difficulty'),
+
+                discipline: formData.get('disciplineId') ? { id: formData.get('disciplineId') } : {
+                    name: formData.get('newDisciplineName'),
+                    practiceHours: formData.get('newPracticeHours')
                 },
-                author: {
-                    name: data.authorName,
-                    weight: parseFloat(data.authorWeight),
-                    eyeColor: data.authorEyeColor,
-                    hairColor: data.authorHairColor,
-                    passportID: data.passportID,
-                    location: {
-                        x: parseFloat(data.locationX),
-                        y: parseFloat(data.locationY),
-                        name: data.locationName,
+
+                minimalPoint: formData.get('minimalPoint'),
+                personalQualitiesMinimum: formData.get('personalQualitiesMinimum'),
+                personalQualitiesMaximum: formData.get('personalQualitiesMaximum'),
+                author: formData.get('authorId') ? { id: formData.get('authorId')}  : {
+                    name: formData.get('newAuthorName'),
+                    weight: formData.get('newAuthorWeight'),
+                    location: formData.get('locationId') ? { id: formData.get('locationId') } : {
+                        name: formData.get('newLocationName'),
+                        x: formData.get('newLocationX'),
+                        y: formData.get('newLocationY')
                     },
+                    eyeColor: formData.get('newAuthorEyeColor'),
+                    hairColor: formData.get('newAuthorHairColor'),
+                    passportID: formData.get('passportID')
                 },
-                minimalPoint: parseFloat(data.minimalPoint),
-                personalQualitiesMinimum: parseFloat(data.personalQualitiesMinimum),
-                personalQualitiesMaximum: parseFloat(data.personalQualitiesMaximum),
                 ownerName: document.getElementById("userName").textContent
             };
 
             stompClient.send("/app/labworks/add", {}, JSON.stringify(labWorkDTO));
+
             closeAddModal();
         }
+
+        function removeRequiredIfHidden() {
+            const hiddenFields = document.querySelectorAll('[required]');
+            hiddenFields.forEach(field => field.removeAttribute('required'));
+        }
+
 
         async function editLabWork(labWorkId) {
             const labWork = labWorks.find(work => work.id === labWorkId);
@@ -303,26 +316,27 @@
                 name: data.name,
                 description: data.description,
                 difficulty: data.difficulty,
-                coordinates: {
-                    x: parseFloat(data.coordinatesX),
-                    y: parseFloat(data.coordinatesY),
-                },
+                coordinates: data.coordinatesId ?
+                    { id: data.coordinatesId } :
+                    { x: parseFloat(data.coordinatesX), y: parseFloat(data.coordinatesY) },
                 discipline: {
                     name: data.disciplineName,
                     practiceHours: parseInt(data.practiceHours),
                 },
-                author: {
-                    name: data.authorName,
-                    weight: parseFloat(data.authorWeight),
-                    eyeColor: data.authorEyeColor,
-                    hairColor: data.authorHairColor,
-                    passportID: data.passportID,
-                    location: {
-                        x: parseFloat(data.locationX),
-                        y: parseFloat(data.locationY),
-                        name: data.locationName,
+                author: data.authorId ?
+                    { id: data.authorId } :
+                    {
+                        name: data.authorName,
+                        weight: parseFloat(data.authorWeight),
+                        eyeColor: data.authorEyeColor,
+                        hairColor: data.authorHairColor,
+                        passportID: data.passportID,
+                        location: {
+                            x: parseFloat(data.locationX),
+                            y: parseFloat(data.locationY),
+                            name: data.locationName,
+                        },
                     },
-                },
                 minimalPoint: parseFloat(data.minimalPoint),
                 personalQualitiesMinimum: parseFloat(data.personalQualitiesMinimum),
                 personalQualitiesMaximum: parseFloat(data.personalQualitiesMaximum),
@@ -332,6 +346,42 @@
             stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));
 
             closeModal();
+        }
+
+        function toggleCreateDiscipline() {
+            const disciplineSelect = document.getElementById('disciplineId');
+            const newDisciplineFields = document.getElementById('newDisciplineFields');
+            newDisciplineFields.style.display = disciplineSelect.value ? 'none' : 'block';
+        }
+
+        function toggleCreateCoordinates() {
+            const coordinatesSelect = document.getElementById('coordinatesId');
+            const newCoordinatesFields = document.getElementById('newCoordinatesFields');
+            newCoordinatesFields.style.display = coordinatesSelect.value ? 'none' : 'block';
+        }
+
+        function toggleCreateAuthor() {
+            const authorSelect = document.getElementById('authorId');
+            const newAuthorFields = document.getElementById('newAuthorFields');
+            newAuthorFields.style.display = authorSelect.value ? 'none' : 'block';
+        }
+
+        function toggleCreateLocation() {
+            const locationSelect = document.getElementById('locationId');
+            const newLocationFields = document.getElementById('newLocationFields');
+            newLocationFields.style.display = locationSelect.value ? 'none' : 'block';
+        }
+
+        function validateDisciplineSelection() {
+            var disciplineId = document.getElementById("disciplineId").value;
+            var newDisciplineFields = document.getElementById("newDisciplineFields");
+            var newDisciplineName = document.querySelector('[name="newDisciplineName"]').value;
+            var newPracticeHours = document.querySelector('[name="newPracticeHours"]').value;
+            if (newDisciplineFields.style.display === "block" && (!newDisciplineName || !newPracticeHours)) {
+                alert("Please fill in all fields to create a new discipline.");
+            } else {
+               alert("ALERT");
+            }
         }
 
 
@@ -353,10 +403,41 @@
 
         function openAddModal() {
             document.getElementById('addLabWorkModal').style.display = 'block';
+
+            fetch('/labworks/form-data')
+                .then(response => response.json())
+                .then(data => {
+                    populateSelectOptions('disciplineId', data.disciplines, 'name');
+                    populateSelectOptions('coordinatesId', data.coordinates, coord => `X: ${coord.x}, Y: ${coord.y}`);
+                    populateSelectOptions('authorId', data.authors, 'name');
+
+                    populateSelectOptions('locationId', data.locations, 'name');
+
+                    if (data.authors && data.authors.length > 0) {
+                        const firstAuthor = data.authors[0];
+                        document.getElementById('locationId').value = firstAuthor.location ? firstAuthor.location.id : '';
+                    }
+
+                })
+                .catch(error => {
+                    console.error('Error fetching form data:', error);
+                });
         }
 
         function closeAddModal() {
             document.getElementById('addLabWorkModal').style.display = 'none';
+        }
+
+        function populateSelectOptions(selectId, items, textGetter) {
+            const selectElement = document.querySelector(`[name=${selectId}]`);
+            selectElement.innerHTML = '<option value="">-- Select --</option>';
+
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = typeof textGetter === 'function' ? textGetter(item) : item[textGetter];
+                selectElement.appendChild(option);
+            });
         }
 
 
@@ -370,33 +451,100 @@
 <p>This is the user area.</p>
 
 <button onclick="openAddModal()">Add Lab Work</button>
+
 <div id="addLabWorkModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeAddModal()">&times;</span>
         <h2>Add Lab Work</h2>
         <form id="addLabWorkForm" onsubmit="addLabWork(event)">
-            <input type="text" name="name" placeholder="Lab Work Name" required>
-            <input type="text" name="disciplineName" placeholder="Discipline Name" required>
-            <input type="number" name="practiceHours" placeholder="Practice Hours" required>
-            <input type="text" name="description" placeholder="Description" required>
-            <input type="text" name="difficulty" placeholder="Difficulty" required>
-            <input type="number" name="coordinatesX" placeholder="Coordinates X" required>
-            <input type="number" name="coordinatesY" placeholder="Coordinates Y" required>
-            <input type="number" name="minimalPoint" placeholder="Minimal Point" required>
-            <input type="number" name="personalQualitiesMaximum" placeholder="Personal Qualities Max" required>
-            <input type="number" name="personalQualitiesMinimum" placeholder="Personal Qualities Min" required>
-            <input type="text" name="authorName" placeholder="Author Name" required>
-            <input type="number" name="authorWeight" placeholder="Author Weight" required>
-            <input type="text" name="authorEyeColor" placeholder="Author Eye Color" required>
-            <input type="text" name="authorHairColor" placeholder="Author Hair Color" required>
-            <input type="number" name="locationX" placeholder="Location X" required>
-            <input type="number" name="locationY" placeholder="Location Y" required>
-            <input type="text" name="locationName" placeholder="Location Name" required>
-            <input type="text" name="passportID" placeholder="Passport ID" required>
+
+            <label for="name">Lab Work Name:</label>
+            <input type="text" name="name" placeholder="Lab Work Name" >
+
+            <label for="coordinatesId">Coordinates:</label>
+            <select name="coordinatesId" id="coordinatesId" onchange="toggleCreateCoordinates()">
+                <option value="">-- Select Coordinates --</option>
+            </select>
+
+            <button type="button" onclick="toggleCreateCoordinates()">Create New Coordinates</button>
+
+
+            <div id="newCoordinatesFields" style="display:none;">
+                <input type="number" name="newCoordinatesX" placeholder="New Coordinates X" >
+                <input type="number" name="newCoordinatesY" placeholder="New Coordinates Y" >
+            </div>
+
+
+            <label for="description">Description:</label>
+            <input type="text" name="description" placeholder="Description" >
+
+
+            <label for="difficulty">Difficulty:</label>
+            <input type="text" name="difficulty" placeholder="Difficulty" >
+
+
+            <label for="disciplineId">Discipline:</label>
+            <select name="disciplineId" id="disciplineId" onchange="toggleCreateDiscipline()">
+                <option value="">-- Select Discipline --</option>
+            </select>
+
+            <button type="button" onclick="toggleCreateDiscipline()">Create New Discipline</button>
+
+
+            <div id="newDisciplineFields" style="display:none;">
+                <input type="text" name="newDisciplineName" placeholder="New Discipline Name" >
+                <input type="number" name="newPracticeHours" placeholder="Practice Hours" >
+            </div>
+
+            <label for="minimal_point">Minimal_point:</label>
+            <input type="number" name="minimalPoint" placeholder="Minimal Point" >
+
+            <label for="personal_qualities_minimum">Personal Qualities Minimum:</label>
+            <input type="number" name="personalQualitiesMinimum" placeholder="Personal Qualities Minimum" >
+
+            <label for="personal_qualities_maximum">Personal Qualities Maximum:</label>
+            <input type="number" name="personalQualitiesMaximum" placeholder="Personal Qualities Maximum" >
+
+
+            <label for="authorId">Author:</label>
+            <select name="authorId" id="authorId" onchange="toggleCreateAuthor()">
+                <option value="">-- Select Author --</option>
+            </select>
+
+            <button type="button" onclick="toggleCreateAuthor()">Create New Author</button>
+
+            <div id="newAuthorFields" style="display:none;">
+                <input type="text" name="newAuthorName" placeholder="New Author Name" >
+                <input type="number" name="newAuthorWeight" placeholder="Author Weight" >
+                <input type="text" name="newAuthorEyeColor" placeholder="Author Eye Color" >
+                <input type="text" name="newAuthorHairColor" placeholder="Author Hair Color" >
+            </div>
+
+            <label for="locationId">Location:</label>
+            <select name="locationId" id="locationId" onchange="toggleCreateLocation()">
+                <option value="">-- Select Location --</option>
+            </select>
+
+            <button type="button" onclick="toggleCreateLocation()">Create New Location</button>
+
+            <div id="newLocationFields" style="display:none;">
+                <input type="number" name="newLocationX" placeholder="New Location X" >
+                <input type="number" name="newLocationY" placeholder="New Location Y" >
+                <input type="text" name="newLocationName" placeholder="New Location Name" >
+            </div>
+
+            <input type="text" name="passportID" placeholder="Passport ID" >
+
             <button type="submit">Add Lab Work</button>
         </form>
     </div>
 </div>
+
+
+
+
+
+
 
 
 <h2>LabWork Entities</h2>

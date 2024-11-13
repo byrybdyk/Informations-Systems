@@ -5,6 +5,7 @@ import com.byrybdyk.lb1.model.Discipline;
 import com.byrybdyk.lb1.model.Person;
 import com.byrybdyk.lb1.model.User;
 import com.byrybdyk.lb1.model.enums.Difficulty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Date;
 
@@ -20,7 +21,10 @@ public class LabWorkDTO {
     private double personalQualitiesMinimum;
     private Float personalQualitiesMaximum;
 
+    @JsonProperty("authorId")
     private Long authorId;
+
+    @JsonProperty("author")
     private Person author;
 
     private Coordinates coordinates;

@@ -1,8 +1,8 @@
     package com.byrybdyk.lb1.controller;
 
     import com.byrybdyk.lb1.dto.LabWorkDTO;
-    import com.byrybdyk.lb1.model.LabWork;
-    import com.byrybdyk.lb1.service.LabWorkService;
+    import com.byrybdyk.lb1.model.*;
+    import com.byrybdyk.lb1.service.*;
     import org.springframework.beans.factory.annotation.Autowired;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
@@ -13,6 +13,7 @@
     import org.springframework.security.core.context.SecurityContextHolder;
 
     import java.security.Principal;
+    import java.util.List;
     import java.util.Optional;
 
     @RestController
@@ -21,11 +22,36 @@
 
         private final LabWorkService labWorkService;
         private final SimpMessagingTemplate messagingTemplate;
+        private final DisciplineService disciplineService;
+        private final CoordinatesService coordinatesService;
+        private final PersonService personService;
+        private final LocationService locationService;
+
 
         @Autowired
-        public LabWorkController(LabWorkService labWorkService, SimpMessagingTemplate messagingTemplate) {
+        public LabWorkController(LabWorkService labWorkService, SimpMessagingTemplate messagingTemplate, PersonService personService, DisciplineService disciplineService, CoordinatesService coordinatesService, LocationService locationService) {
             this.labWorkService = labWorkService;
             this.messagingTemplate = messagingTemplate;
+            this.personService = personService;
+            this.disciplineService = disciplineService;
+            this.coordinatesService = coordinatesService;
+            this.locationService = locationService;
+        }
+
+        @GetMapping("/form-data")
+        public ResponseEntity<?> getFormData() {
+            List<Discipline> disciplines = disciplineService.findAll();
+            List<Coordinates> coordinates = coordinatesService.findAll();
+            List<Person> authors = personService.findAll();
+            List<Location> locations = locationService.findAll();
+
+            FormData formData = new FormData();
+            formData.setDisciplines(disciplines);
+            formData.setCoordinates(coordinates);
+            formData.setAuthors(authors);
+            formData.setLocations(locations);
+
+            return new ResponseEntity<>(formData, HttpStatus.OK);
         }
 
         @MessageMapping("/labworks/add")

@@ -5,6 +5,7 @@ import com.byrybdyk.lb1.repository.CoordinatesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -22,15 +23,14 @@ public class CoordinatesService {
             if (existingCoordinates != null) {
                 return existingCoordinates;
             }
+            throw new IllegalArgumentException("Coordinates with specified ID not found");
+        }else if (coordinatesData != null) {
+            return saveCoordinates(coordinatesData);
         }
-        if (coordinatesData == null) {
+        else  {
             throw new IllegalArgumentException("Coordinates cannot be null");
         }
-        Coordinates newCoordinates = coordinatesRepository.findById(coordinatesData.getId())
-                .orElse(new Coordinates());
-        newCoordinates.setX(coordinatesData.getX());
-        newCoordinates.setY(coordinatesData.getY());
-        return saveCoordinates(newCoordinates);
+
     }
 
     public Coordinates findById(Long coordinatesId) {
@@ -40,5 +40,9 @@ public class CoordinatesService {
 
     public Coordinates saveCoordinates(Coordinates coordinates) {
         return coordinatesRepository.save(coordinates);
+    }
+
+    public List<Coordinates> findAll() {
+        return coordinatesRepository.findAll();
     }
 }

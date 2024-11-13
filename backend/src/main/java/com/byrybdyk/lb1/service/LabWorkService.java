@@ -64,31 +64,27 @@ public class LabWorkService {
     public LabWork createLabWorkFromDTO(LabWorkDTO labWorkDTO) {
         try {
             LabWork labWork = new LabWork();
-            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthorId(), labWorkDTO.getAuthor());
+
+            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthor().getId() , labWorkDTO.getAuthor());
             labWork.setAuthor(author);
 
             Discipline discipline = disciplineService.getOrCreateDiscipline(labWorkDTO.getDiscipline());
             labWork.setDiscipline(discipline);
 
-            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinatesId(), labWorkDTO.getCoordinates());
+            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinates().getId(), labWorkDTO.getCoordinates());
             labWork.setCoordinates(coordinates);
 
             String userName = labWorkDTO.getOwnerName();
-            System.out.println("userName: " + userName);
             User owner = userRepository.findByUsername(userName)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
             mapDtoToLabWork(labWork, labWorkDTO, author, owner);
-            System.out.println("ДО СОХЗРАНЕНИЯ ЛАБЫ");
             LabWork savedLabWork = saveLabWork(labWork);
-            System.out.println("ПОСЛЕ СОХЗРАНЕНИЯ ЛАБЫ");
 
             User currentUser = userRepository.findByUsername(userName)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
-            System.out.println("ПОСЛЕ ПОЛУЧЕНИЯ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ");
             saveLabWorkHistory(savedLabWork, ChangeType.CREATE, currentUser);
 
-            System.out.println("ВЫХОД");
             return savedLabWork;
         } catch (Exception e) {
             System.out.println("Error while creating LabWork: " + e.getMessage());
