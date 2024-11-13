@@ -4,6 +4,7 @@ import com.byrybdyk.lb1.model.enums.ChangeType;
 import com.byrybdyk.lb1.model.enums.Difficulty;
 import jakarta.persistence.*;
 import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "lab_work_history")
@@ -22,7 +23,7 @@ public class LabWorkHistory {
 
     @Column(nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
-    private Date changeDate;
+    private Date creationDate;
 
     @Column(nullable = true)
     private String description;
@@ -58,9 +59,12 @@ public class LabWorkHistory {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "changed_by", nullable = false)
-    private User changedBy; // Пользователь, который сделал изменение
+    private User changedBy;
 
-    // Геттеры и сеттеры
+    // Новое поле для времени изменения
+    @Column(name = "update_time", nullable = false)
+    private LocalDateTime updateTime;
+
     public long getId() {
         return id;
     }
@@ -85,13 +89,6 @@ public class LabWorkHistory {
         this.coordinates = coordinates;
     }
 
-    public Date getChangeDate() {
-        return changeDate;
-    }
-
-    public void setChangeDate(Date changeDate) {
-        this.changeDate = changeDate;
-    }
 
     public String getDescription() {
         return description;
@@ -157,7 +154,6 @@ public class LabWorkHistory {
         this.owner_id = owner_id;
     }
 
-
     public User getChangedBy() {
         return changedBy;
     }
@@ -173,4 +169,21 @@ public class LabWorkHistory {
     public void setChangeType(ChangeType changeType) {
         this.changeType = changeType;
     }
+
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
+    }
+
+    public Date getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
+    }
 }
+

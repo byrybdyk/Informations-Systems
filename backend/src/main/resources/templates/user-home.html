@@ -326,7 +326,6 @@
                 minimalPoint: parseFloat(data.minimalPoint),
                 personalQualitiesMinimum: parseFloat(data.personalQualitiesMinimum),
                 personalQualitiesMaximum: parseFloat(data.personalQualitiesMaximum),
-                ownerId: parseInt(data.owner_id),
                 ownerName: parseInt(data.ownerName)
             };
 
@@ -431,7 +430,7 @@
         <h2>Edit Lab Work</h2>
         <form id="editLabWorkForm" onsubmit="updateLabWork(event, document.getElementById('editLabWorkId').value)">
             <input type="hidden" id="editLabWorkId" name="id">
-            <input type="hidden" id="editLabWorkOwnerId" name="owner_id" placeholder="Owner ID" required>
+            <input type="hidden" id="editLabWorkOwnerId" name="ownerName" placeholder="Owner ID" required>
             <input type="text" id="editLabWorkName" name="name" placeholder="Lab Work Name" required>
             <input type="text" id="editLabWorkDisciplineName" name="disciplineName" placeholder="Discipline Name" required>
             <input type="number" id="editLabWorkPracticeHours" name="practiceHours" placeholder="Practice Hours" required>

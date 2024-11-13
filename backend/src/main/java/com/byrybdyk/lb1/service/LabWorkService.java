@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -114,10 +115,8 @@ public class LabWorkService {
             Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinatesId(), labWorkDTO.getCoordinates());
             labWork.setCoordinates(coordinates);
 
-            Long userId = labWorkDTO.getOwnerId();
-            System.out.println("userId: " + userId);
-            String userName = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found")).getUsername();
+            String userName = labWorkDTO.getOwnerName();
+            System.out.println("username: " + userName);
             User owner = userRepository.findByUsername(userName)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -165,7 +164,7 @@ public class LabWorkService {
     private void saveLabWorkHistory(LabWork labWork, ChangeType changeType, User changedBy) {
         LabWorkHistory history = new LabWorkHistory();
         history.setName(labWork.getName());
-        history.setChangeDate(new Date());
+        history.setCreationDate(labWork.getCreationDate());
         history.setDescription(labWork.getDescription());
         history.setDifficulty(labWork.getDifficulty());
         history.setDiscipline(labWork.getDiscipline());
@@ -177,6 +176,7 @@ public class LabWorkService {
         history.setChangeType(changeType);
         history.setChangedBy(changedBy);
         history.setCoordinates(labWork.getCoordinates());
+        history.setUpdateTime(LocalDateTime.now());
         labWorkHistoryRepository.save(history);
     }
 }
