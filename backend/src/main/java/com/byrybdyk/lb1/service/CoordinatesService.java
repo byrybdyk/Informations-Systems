@@ -24,13 +24,18 @@ public class CoordinatesService {
                 return existingCoordinates;
             }
             throw new IllegalArgumentException("Coordinates with specified ID not found");
-        }else if (coordinatesData != null) {
+        } else if (coordinatesData.getId() > 0) {
+            Coordinates existingCoordinates2 = findById(coordinatesData.getId());
+            if (existingCoordinates2 != null) {
+                return existingCoordinates2;
+            }
+        } else if (coordinatesData != null) {
             return saveCoordinates(coordinatesData);
         }
         else  {
             throw new IllegalArgumentException("Coordinates cannot be null");
         }
-
+        throw new IllegalArgumentException("Coordinates cannot be null");
     }
 
     public Coordinates findById(Long coordinatesId) {
