@@ -64,14 +64,15 @@ public class LabWorkService {
     public LabWork createLabWorkFromDTO(LabWorkDTO labWorkDTO) {
         try {
             LabWork labWork = new LabWork();
-
-            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthor().getId() , labWorkDTO.getAuthor());
+            System.out.println("AuthorId " + labWorkDTO.getAuthor().getId() + " AuthorID " + labWorkDTO.getAuthorId());
+            Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthorId() , labWorkDTO.getAuthor());
             labWork.setAuthor(author);
 
             Discipline discipline = disciplineService.getOrCreateDiscipline(labWorkDTO.getDiscipline());
             labWork.setDiscipline(discipline);
 
-            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinates().getId(), labWorkDTO.getCoordinates());
+            System.out.println("CoordinatesId " + labWorkDTO.getCoordinates().getId() + " CoordinatesId " + labWorkDTO.getCoordinatesId());
+            Coordinates coordinates = coordinatesService.getOrCreateCoordinates(labWorkDTO.getCoordinatesId(), labWorkDTO.getCoordinates());
             labWork.setCoordinates(coordinates);
 
             String userName = labWorkDTO.getOwnerName();

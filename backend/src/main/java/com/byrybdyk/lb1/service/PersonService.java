@@ -25,10 +25,18 @@ public class PersonService {
                 return existingAuthor;
             }
             throw new IllegalArgumentException("Author with specified ID not found");
+        } else if (authorData.getId() > 0) {
+
+            Person existingAuthor = findById(authorData.getId());
+            if (existingAuthor != null) {
+                return existingAuthor;
+            }
+            return savePerson(authorData);
         } else if (authorData != null) {
             return savePerson(authorData);
-        } else {
-            throw new IllegalArgumentException("Author data cannot be null");
+        }
+        else {
+            throw new IllegalArgumentException("Author with specified ID not found");
         }
     }
 
