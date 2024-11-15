@@ -148,7 +148,7 @@
             <td>${labWork.author.location.y}</td>
             <td>${labWork.author.location.name}</td>
             <td>${labWork.author.passportID}</td>
-            <td><button onclick="openEditModal(${labWork.id})">Edit</button></td>
+            <td><button onclick="handleSubmit(event, ${labWork.id})">Edit</button></td>
         `;
                 tableBody.appendChild(row);
             });
@@ -176,12 +176,11 @@
             renderTable(currentPage);
         };
 
-        async function addLabWork(event) {
-            event.preventDefault();
+        async function addLabWork() {
 
             removeRequiredIfHidden();
 
-            const formData = new FormData(document.getElementById('addLabWorkForm'));
+            const formData = new FormData(document.getElementById('labWorkForm'));
 
             const labWorkDTO = {
                 name: formData.get('name'),
@@ -220,7 +219,7 @@
 
             stompClient.send("/app/labworks/add", {}, JSON.stringify(labWorkDTO));
 
-            closeAddModal();
+            closeModal();
         }
 
         function removeRequiredIfHidden() {
@@ -230,15 +229,14 @@
 
 
         async function editLabWork(event) {
-            event.preventDefault();  // Чтобы форма не отправлялась
+            event.preventDefault();
 
-            const form = event.target;  // Получаем форму
-            const labWorkId = form.querySelector('[data-id]').getAttribute('data-id');  // Извлекаем labWorkId
+            const form = event.target;
+            const labWorkId = form.querySelector('[data-id]').getAttribute('data-id');
 
             alert("labWorkId: " + labWorkId);
 
-            // Находим labWork в коллекции labWorks по ID
-            const labWork = labWorks.find(work => work.id === Number(labWorkId));  // Преобразуем в число для сравнения
+            const labWork = labWorks.find(work => work.id === Number(labWorkId));
 
             if (!labWork) {
                 alert('Lab Work not found');
@@ -248,7 +246,6 @@
             try {
                 const currentUserName = document.getElementById("userName").textContent;
 
-                // Проверяем, может ли текущий пользователь редактировать эту работу
                 const response = await fetch(`/labworks/${labWorkId}/can-edit`, {
                     method: 'GET',
                     headers: {
@@ -259,7 +256,6 @@
                 if (response.ok) {
                     const canEdit = await response.json();
                     if (canEdit) {
-                        // Заполняем поля формы с данными labWork
                         document.getElementById('editLabWorkId').value = labWork.id;
                         document.getElementById('editLabWorkName').value = labWork.name;
                         document.getElementById('editLabWorkDescription').value = labWork.description;
@@ -268,28 +264,23 @@
                         document.getElementById('editLabWorkPersonalQualitiesMax').value = labWork.personalQualitiesMaximum;
                         document.getElementById('editLabWorkPersonalQualitiesMin').value = labWork.personalQualitiesMinimum;
 
-                        // Заполняем поля для координат
                         if (labWork.coordinates) {
                             document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x;
                             document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y;
                         }
 
-                        // Проверка наличия дисциплины
                         if (labWork.disciplines && labWork.disciplines.length > 0) {
                             populateSelectEditOptions('editLabWorkDisciplineId', labWork.disciplines, 'name', labWork.discipline ? labWork.discipline.id : null);
                         }
 
-                        // Проверка наличия авторов
                         if (labWork.authors && labWork.authors.length > 0) {
                             populateSelectEditOptions('editLabWorkAuthorId', labWork.authors, 'name', labWork.author ? labWork.author.id : null);
                         }
 
-                        // Проверка наличия локации
                         if (labWork.locations && labWork.locations.length > 0) {
                             populateSelectEditOptions('editLabWorkLocationId', labWork.locations, 'name', labWork.location ? labWork.location.id : null);
                         }
 
-                        // Заполняем дополнительные данные для автора, если он существует
                         if (labWork.author) {
                             if (document.getElementById('editLabWorkAuthorName')) {
                                 document.getElementById('editLabWorkAuthorName').value = labWork.author.name || '';
@@ -321,7 +312,6 @@
                             }
                         }
 
-                        // Делаем модальное окно видимым
                         document.getElementById('editModal').style.display = 'block';
 
                         updateLabWork(event, labWork.id);
@@ -359,11 +349,9 @@
 
 
         async function openEditModal(labWorkId) {
-            // Показываем модальное окно
             document.getElementById('editModal').style.display = 'block';
 
             try {
-                // Получаем данные о labWork
                 const response = await fetch(`/labworks/${labWorkId}`);
                 const labWork = await response.json();
 
@@ -372,7 +360,6 @@
                     return;
                 }
 
-                // Заполняем поля формы с текущими значениями labWork
                 const labWorkIdInput = document.getElementById('editLabWorkId');
                 if (labWorkIdInput) {
                     labWorkIdInput.value = labWork.id;
@@ -395,11 +382,9 @@
                     document.getElementById('editLabWorkPassportID').value = labWork.author.passportID || '';
                 }
 
-                // Получаем данные для выпадающих списков
                 const formDataResponse = await fetch('/labworks/form-data');
                 const data = await formDataResponse.json();
 
-                // Проверяем, что данные для выпадающих списков существуют
                 if (data && data.disciplines) {
                     populateSelectEditOptions('editLabWorkDisciplineId', data.disciplines, 'name', labWork.discipline ? labWork.discipline.id : null);
                 }
@@ -416,7 +401,6 @@
                     populateSelectEditOptions('editLabWorkLocationId', data.locations, 'name', labWork.author && labWork.author.location ? labWork.author.location.id : null);
                 }
 
-                // Заполняем данные для автора
                 if (labWork.author) {
                     document.getElementById('editLabWorkAuthorName').value = labWork.author.name || '';
                     document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight || '';
@@ -447,11 +431,9 @@
         async function updateLabWork(event, labWorkId) {
             event.preventDefault();
 
-            // Извлекаем данные из формы
             const formData = new FormData(document.getElementById('editLabWorkForm'));
             const data = Object.fromEntries(formData.entries());
 
-            // Структурируем данные для отправки
             const labWorkDTO = {
                 id: labWorkId,
                 name: data.name,
@@ -484,36 +466,111 @@
                 ownerName: data.ownerName
             };
 
-            // Отправляем данные через WebSocket
             stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));
 
-            // Закрываем модальное окно
             closeModal();
         }
 
-        function toggleCreateDiscipline() {
-            const disciplineSelect = document.getElementById('disciplineId');
-            const newDisciplineFields = document.getElementById('newDisciplineFields');
-            newDisciplineFields.style.display = disciplineSelect.value ? 'none' : 'block';
+        function toggleCreateCoordinates() {
+            const fields = document.getElementById("newCoordinatesFields");
+            const select = document.getElementById("coordinatesId");
+
+            if (select.value) {
+                fields.style.display = "none";
+            } else {
+                fields.style.display = "block";
+            }
         }
 
-        function toggleCreateCoordinates() {
-            const coordinatesSelect = document.getElementById('coordinatesId');
-            const newCoordinatesFields = document.getElementById('newCoordinatesFields');
-            newCoordinatesFields.style.display = coordinatesSelect.value ? 'none' : 'block';
+        function createNewCoordinates() {
+            const fields = document.getElementById("newCoordinatesFields");
+            const select = document.getElementById("coordinatesId");
+
+            select.value = "";
+            fields.style.display = "block";
+        }
+
+        function toggleCreateDiscipline() {
+            const fields = document.getElementById("newDisciplineFields");
+            const select = document.getElementById("disciplineId");
+
+            if (select.value) {
+                fields.style.display = "none";
+            } else {
+                fields.style.display = "block";
+            }
+        }
+
+        function createNewDiscipline() {
+            const fields = document.getElementById("newDisciplineFields");
+            const select = document.getElementById("disciplineId");
+
+            select.value = "";
+            fields.style.display = "block";
         }
 
         function toggleCreateAuthor() {
-            const authorSelect = document.getElementById('authorId');
-            const newAuthorFields = document.getElementById('newAuthorFields');
-            newAuthorFields.style.display = authorSelect.value ? 'none' : 'block';
+            const fields = document.getElementById("newAuthorFields");
+            const select = document.getElementById("authorId");
+
+            if (select.value) {
+                fields.style.display = "none";
+            } else {
+                fields.style.display = "block";
+            }
+        }
+
+        function createNewAuthor() {
+            const fields = document.getElementById("newAuthorFields");
+            const select = document.getElementById("authorId");
+
+            select.value = "";
+            fields.style.display = "block";
         }
 
         function toggleCreateLocation() {
-            const locationSelect = document.getElementById('locationId');
-            const newLocationFields = document.getElementById('newLocationFields');
-            newLocationFields.style.display = locationSelect.value ? 'none' : 'block';
+            const fields = document.getElementById("newLocationFields");
+            const select = document.getElementById("locationId");
+
+            if (select.value) {
+                fields.style.display = "none";
+            } else {
+                fields.style.display = "block";
+            }
         }
+
+        function createNewLocation() {
+            const fields = document.getElementById("newLocationFields");
+            const select = document.getElementById("locationId");
+
+            select.value = "";
+            fields.style.display = "block";
+        }
+
+
+        document.getElementById('coordinatesId').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('newCoordinatesFields').style.display = 'none';
+            }
+        });
+
+        document.getElementById('disciplineId').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('newDisciplineFields').style.display = 'none';
+            }
+        });
+
+        document.getElementById('authorId').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('newAuthorFields').style.display = 'none';
+            }
+        });
+
+        document.getElementById('locationId').addEventListener('change', function() {
+            if (this.value) {
+                document.getElementById('newLocationFields').style.display = 'none';
+            }
+        });
 
         function validateDisciplineSelection() {
             var disciplineId = document.getElementById("disciplineId").value;
@@ -527,8 +584,6 @@
             }
         }
 
-
-
         function formatUTCDate(dateString) {
             let date = new Date(dateString);
             return date.getUTCFullYear() + "-" +
@@ -538,10 +593,6 @@
                 ("0" + date.getUTCMinutes()).slice(-2) + ":" +
                 ("0" + date.getUTCSeconds()).slice(-2) + "." +
                 ("00" + date.getUTCMilliseconds()).slice(-3);
-        }
-
-        function closeModal() {
-            document.getElementById('editModal').style.display = 'none';
         }
 
         function openAddModal() {
@@ -575,16 +626,13 @@
             const selectElement = document.getElementById(elementId);
             if (!selectElement || !options) return;
 
-            // Очистить текущие опции
             selectElement.innerHTML = '';
 
-            // Добавить пустую опцию по умолчанию
             const defaultOption = document.createElement('option');
             defaultOption.value = '';
             defaultOption.textContent = 'Please select';
             selectElement.appendChild(defaultOption);
 
-            // Добавить новые опции
             options.forEach(option => {
                 const optionElement = document.createElement('option');
                 optionElement.value = option.id;
@@ -600,27 +648,90 @@
 
         function populateSelectOptions(selectId, items, selectedId) {
             const selectElement = document.querySelector(`[name=${selectId}]`);
-            selectElement.innerHTML = '<option value="">-- Select --</option>'; // Очистка старых опций
+            selectElement.innerHTML = '<option value="">-- Select --</option>';
 
-            // Создание опций для каждого элемента
             items.forEach(item => {
                 const option = document.createElement('option');
                 option.value = item.id;
-                option.textContent = typeof item.name !== 'undefined' ? item.name : `${item.x}, ${item.y}`; // Для координат или других полей
+                option.textContent = typeof item.name !== 'undefined' ? item.name : `${item.x}, ${item.y}`;
                 if (item.id === selectedId) {
-                    option.selected = true; // Устанавливаем выбранным нужный элемент
+                    option.selected = true;
                 }
                 selectElement.appendChild(option);
             });
         }
 
+        function openFormModal(labWork = null) {
 
+            document.getElementById("labWorkForm").reset();
 
+            document.getElementById("newCoordinatesFields").style.display = "none";
+            document.getElementById("newDisciplineFields").style.display = "none";
+            document.getElementById("newAuthorFields").style.display = "none";
+            document.getElementById("newLocationFields").style.display = "none";
 
+            if (labWork) {
+                document.getElementById("modalTitle").textContent = "Edit Lab Work";
+                document.getElementById("submitButton").textContent = "Update Lab Work";
 
+                document.getElementById("labWorkId").value = labWork.id;
+                document.getElementById("labWorkName").value = labWork.name;
+                document.getElementById("coordinatesId").value = labWork.coordinatesId || "";
+                document.getElementById("labWorkDescription").value = labWork.description || "";
+                document.getElementById("labWorkDifficulty").value = labWork.difficulty || "";
+                document.getElementById("disciplineId").value = labWork.disciplineId || "";
+                document.getElementById("minimalPoint").value = labWork.minimalPoint || "";
+                document.getElementById("personalQualitiesMinimum").value = labWork.personalQualitiesMinimum || "";
+                document.getElementById("personalQualitiesMaximum").value = labWork.personalQualitiesMaximum || "";
+                document.getElementById("authorId").value = labWork.authorId || "";
+                document.getElementById("locationId").value = labWork.locationId || "";
+
+            } else {
+                document.getElementById("modalTitle").textContent = "Add Lab Work";
+                document.getElementById("submitButton").textContent = "Add Lab Work";
+
+            }
+
+            fetch('/labworks/form-data')
+                .then(response => response.json())
+                .then(data => {
+                    populateSelectOptions('disciplineId', data.disciplines, 'name');
+                    populateSelectOptions('coordinatesId', data.coordinates, coord => `X: ${coord.x}, Y: ${coord.y}`);
+                    populateSelectOptions('authorId', data.authors, 'name');
+
+                    populateSelectOptions('locationId', data.locations, 'name');
+
+                    if (data.authors && data.authors.length > 0) {
+                        const firstAuthor = data.authors[0];
+                        document.getElementById('locationId').value = firstAuthor.location ? firstAuthor.location.id : '';
+                    }
+
+                })
+                .catch(error => {
+                    console.error('Error fetching form data:', error);
+                });
+
+            document.getElementById("labWorkModal").style.display = "block";
+        }
+
+        function handleSubmit(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            if (data.id) {
+                editLabWork();
+            } else {
+                addLabWork();
+            }
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById("labWorkModal").style.display = "none";
+        }
 
     </script>
-
 
 </head>
 
@@ -628,13 +739,14 @@
 <h1>Welcome, <span th:text="${username}" id="userName">User</span>!</h1>
 <p>This is the user area.</p>
 
-<button onclick="openAddModal()">Add Lab Work</button>
+<button onclick="openFormModal()">Add Lab Work</button>
 
-<div id="addLabWorkModal" class="modal">
+<div id="labWorkModal" class="modal">
     <div class="modal-content">
-        <span class="close" onclick="closeAddModal()">&times;</span>
-        <h2>Add Lab Work</h2>
-        <form id="addLabWorkForm" onsubmit="addLabWork(event)">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle">Add Lab Work</h2>
+        <form id="labWorkForm" onsubmit="handleSubmit(event)">
+            <input type="hidden" id="labWorkId" name="id">
 
             <label for="name">Lab Work Name:</label>
             <input type="text" name="name" placeholder="Lab Work Name" >
@@ -644,30 +756,25 @@
                 <option value="">-- Select Coordinates --</option>
             </select>
 
-            <button type="button" onclick="toggleCreateCoordinates()">Create New Coordinates</button>
-
+            <button type="button" onclick="createNewCoordinates()()">Create New Coordinates</button>
 
             <div id="newCoordinatesFields" style="display:none;">
                 <input type="number" name="newCoordinatesX" placeholder="New Coordinates X" >
                 <input type="number" name="newCoordinatesY" placeholder="New Coordinates Y" >
             </div>
 
-
             <label for="description">Description:</label>
             <input type="text" name="description" placeholder="Description" >
 
-
             <label for="difficulty">Difficulty:</label>
             <input type="text" name="difficulty" placeholder="Difficulty" >
-
 
             <label for="disciplineId">Discipline:</label>
             <select name="disciplineId" id="disciplineId" onchange="toggleCreateDiscipline()">
                 <option value="">-- Select Discipline --</option>
             </select>
 
-            <button type="button" onclick="toggleCreateDiscipline()">Create New Discipline</button>
-
+            <button type="button" onclick="createNewDiscipline()">Create New Discipline</button>
 
             <div id="newDisciplineFields" style="display:none;">
                 <input type="text" name="newDisciplineName" placeholder="New Discipline Name" >
@@ -689,44 +796,33 @@
                 <option value="">-- Select Author --</option>
             </select>
 
-            <button type="button" onclick="toggleCreateAuthor()">Create New Author</button>
+            <button type="button" onclick="createNewAuthor()">Create New Author</button>
 
             <div id="newAuthorFields" style="display:none;">
                 <input type="text" name="newAuthorName" placeholder="New Author Name" >
                 <input type="number" name="newAuthorWeight" placeholder="Author Weight" >
                 <input type="text" name="newAuthorEyeColor" placeholder="Author Eye Color" >
                 <input type="text" name="newAuthorHairColor" placeholder="Author Hair Color" >
+                <input type="text" name="passportID" placeholder="Passport ID" >
+                <label for="locationId">Location:</label>
+                <select name="locationId" id="locationId" onchange="toggleCreateLocation()">
+                    <option value="">-- Select Location --</option>
+                </select>
+                <button type="button" onclick="createNewLocation()">Create New Location</button>
+
+                <div id="newLocationFields" style="display:none;">
+                    <input type="number" name="newLocationX" placeholder="New Location X" >
+                    <input type="number" name="newLocationY" placeholder="New Location Y" >
+                    <input type="text" name="newLocationName" placeholder="New Location Name" >
+                </div>
             </div>
 
-            <label for="locationId">Location:</label>
-            <select name="locationId" id="locationId" onchange="toggleCreateLocation()">
-                <option value="">-- Select Location --</option>
-            </select>
-
-            <button type="button" onclick="toggleCreateLocation()">Create New Location</button>
-
-            <div id="newLocationFields" style="display:none;">
-                <input type="number" name="newLocationX" placeholder="New Location X" >
-                <input type="number" name="newLocationY" placeholder="New Location Y" >
-                <input type="text" name="newLocationName" placeholder="New Location Name" >
-            </div>
-
-            <input type="text" name="passportID" placeholder="Passport ID" >
-
-            <button type="submit">Add Lab Work</button>
+            <button type="submit" id="submitButton">Add Lab Work</button>
         </form>
     </div>
 </div>
 
-
-
-
-
-
-
-
 <h2>LabWork Entities</h2>
-
 <div class="table-container">
     <table id="labWorkTable">
         <thead>
@@ -760,115 +856,11 @@
     </table>
 </div>
 
-
 <div id="pagination">
     <button onclick="previousPage()">Previous</button>
     <span id="currentPage">1</span> / <span id="totalPages">1</span>
     <button onclick="nextPage()">Next</button>
 </div>
-
-<div id="editModal" style="display:none;">
-    <div class="modal-content">
-        <span class="close" onclick="closeEditModal()">&times;</span>
-        <h2>Edit Lab Work</h2>
-        <form id="editLabWorkForm" onsubmit="editLabWork(event)">
-            <!-- Добавляем data-id для передачи labWorkId -->
-            <input type="hidden" id="editLabWorkId" name="id" data-id=""> <!-- Пример для id -->
-
-            <label for="name">Lab Work Name:</label>
-            <input type="text" name="name" id="editLabWorkName" placeholder="Lab Work Name">
-
-            <label for="coordinatesId">Coordinates:</label>
-            <select name="coordinatesId" id="editLabWorkCoordinatesId">
-                <option value="">-- Select Coordinates --</option>
-            </select>
-            <button type="button" onclick="toggleCreateCoordinates()">Create New Coordinates</button>
-
-            <div id="newCoordinatesFields" style="display:none;">
-                <input type="number" id ="editLabWorkCoordinatesX" name="newCoordinatesX" placeholder="New Coordinates X">
-                <input type="number" id ="editLabWorkCoordinatesY" name="newCoordinatesY" placeholder="New Coordinates Y">
-            </div>
-
-            <label for="description">Description:</label>
-            <input type="text" name="description" id="editLabWorkDescription" placeholder="Description">
-
-            <label for="difficulty">Difficulty:</label>
-            <input type="text" name="difficulty" id="editLabWorkDifficulty" placeholder="Difficulty">
-
-            <label for="disciplineId">Discipline:</label>
-            <select name="disciplineId" id="editLabWorkDisciplineId">
-                <option value="">-- Select Discipline --</option>
-            </select>
-            <button type="button" onclick="toggleCreateDiscipline()">Create New Discipline</button>
-
-            <div id="newDisciplineFields" style="display:none;">
-                <input type="text" name="newDisciplineName" placeholder="New Discipline Name">
-                <input type="number" name="newPracticeHours" placeholder="Practice Hours">
-            </div>
-
-            <label for="minimalPoint">Minimal Point:</label>
-            <input type="number" name="minimalPoint" id="editLabWorkMinimalPoint" placeholder="Minimal Point">
-
-            <label for="personalQualitiesMin">Personal Qualities Minimum:</label>
-            <input type="number" name="personalQualitiesMinimum" id="editLabWorkPersonalQualitiesMin" placeholder="Personal Qualities Minimum">
-
-            <label for="personalQualitiesMax">Personal Qualities Maximum:</label>
-            <input type="number" name="personalQualitiesMaximum" id="editLabWorkPersonalQualitiesMax" placeholder="Personal Qualities Maximum">
-
-            <label for="authorId">Author:</label>
-            <select name="authorId" id="editLabWorkAuthorId">
-                <option value="">-- Select Author --</option>
-            </select>
-            <button type="button" onclick="toggleCreateAuthor()">Create New Author</button>
-
-            <div id="newAuthorFields" style="display:none;">
-                <<!-- Для данных автора -->
-                <label for="authorName">Author Name:</label>
-                <input type="text" id="editLabWorkAuthorName" name="authorName" placeholder="Author Name">
-
-                <label for="authorWeight">Author Weight:</label>
-                <input type="number" id="editLabWorkAuthorWeight" name="authorWeight" placeholder="Author Weight">
-
-                <label for="authorEyeColor">Author Eye Color:</label>
-                <input type="text" id="editLabWorkAuthorEyeColor" name="authorEyeColor" placeholder="Author Eye Color">
-
-                <label for="authorHairColor">Author Hair Color:</label>
-                <input type="text" id="editLabWorkAuthorHairColor" name="authorHairColor" placeholder="Author Hair Color">
-
-                <label for="authorLocationX">Author Location X:</label>
-                <input type="number" id="editLabWorkLocationX" name="authorLocationX" placeholder="Location X">
-
-                <label for="authorLocationY">Author Location Y:</label>
-                <input type="number" id="editLabWorkLocationY" name="authorLocationY" placeholder="Location Y">
-
-                <label for="authorLocationName">Author Location Name:</label>
-                <input type="text" id="editLabWorkLocationName" name="authorLocationName" placeholder="Location Name">
-
-                <label for="authorPassportID">Author Passport ID:</label>
-                <input type="text" id="editLabWorkPassportID" name="authorPassportID" placeholder="Passport ID">
-
-            </div>
-
-            <label for="locationId">Location:</label>
-            <select name="locationId" id="editLabWorkLocationId">
-                <option value="">-- Select Location --</option>
-            </select>
-            <button type="button" onclick="toggleCreateLocation()">Create New Location</button>
-
-            <div id="newLocationFields" style="display:none;">
-                <input type="number" name="newLocationX" placeholder="New Location X">
-                <input type="number" name="newLocationY" placeholder="New Location Y">
-                <input type="text" name="newLocationName" placeholder="New Location Name">
-            </div>
-
-            <input type="text" name="passportID" placeholder="Passport ID" id="editLabWorkPassportID">
-
-            <button type="submit">Update Lab Work</button>
-        </form>
-    </div>
-</div>
-
-
 
 <a href="/logout">Logout</a>
 </body>
