@@ -89,15 +89,19 @@
                 stompClient.subscribe('/topic/labworks', function (message) {
                     var labWork = JSON.parse(message.body);
                     console.log('---------------------------------', message);
-                    if (message.body.status !== null) {
+
+                    if (labWork.type === 'delete' && labWork.labWorkId) {
+                        onLabWorkDelete(labWork.labWorkId);
+                    } else {
                         onLabWorkUpdate(labWork);
                     }
                 });
-
             }, function (error) {
                 console.error('WebSocket connection failed: ' + error);
             });
         }
+
+
 
         function onLabWorkUpdate(labWork) {
             console.log('LabWork updated:', labWork);
@@ -116,6 +120,18 @@
             renderTable(currentPage);
         }
 
+        function onLabWorkDelete(labWorkId) {
+            labWorks = labWorks.filter(labWork => labWork.id !== labWorkId);
+
+            const row = document.querySelector(`tr[data-id="${labWorkId}"]`);
+            if (row) {
+                row.remove();
+                console.log(`LabWork with ID ${labWorkId} has been deleted from the table.`);
+            }
+
+            renderTable(currentPage);
+        }
+
         function renderTable(page) {
             totalPages = Math.ceil(labWorks.length / pageSize);
             const tableBody = document.getElementById('labWorkTableBody');
@@ -126,30 +142,32 @@
 
             paginatedItems.forEach(labWork => {
                 const row = document.createElement('tr');
+                row.setAttribute('data-id', labWork.id);
                 row.innerHTML = `
-            <td>${labWork.id}</td>
-            <td>${labWork.owner_id.username}</td>
-            <td>${formatUTCDate(labWork.creationDate)}</td>
-            <td>${labWork.name}</td>
-            <td>${labWork.discipline.name}</td>
-            <td>${labWork.discipline.practiceHours}</td>
-            <td>${labWork.description}</td>
-            <td>${labWork.difficulty}</td>
-            <td>${labWork.coordinates.x}</td>
-            <td>${labWork.coordinates.y}</td>
-            <td>${labWork.minimalPoint}</td>
-            <td>${labWork.personalQualitiesMaximum}</td>
-            <td>${labWork.personalQualitiesMinimum}</td>
-            <td>${labWork.author.name}</td>
-            <td>${labWork.author.weight}</td>
-            <td>${labWork.author.eyeColor}</td>
-            <td>${labWork.author.hairColor}</td>
-            <td>${labWork.author.location.x}</td>
-            <td>${labWork.author.location.y}</td>
-            <td>${labWork.author.location.name}</td>
-            <td>${labWork.author.passportID}</td>
-            <td><button onclick="openFormModal(${labWork.id})">Edit</button></td>
-        `;
+                    <td>${labWork.id}</td>
+                    <td>${labWork.owner_id.username}</td>
+                    <td>${formatUTCDate(labWork.creationDate)}</td>
+                    <td>${labWork.name}</td>
+                    <td>${labWork.discipline.name}</td>
+                    <td>${labWork.discipline.practiceHours}</td>
+                    <td>${labWork.description}</td>
+                    <td>${labWork.difficulty}</td>
+                    <td>${labWork.coordinates.x}</td>
+                    <td>${labWork.coordinates.y}</td>
+                    <td>${labWork.minimalPoint}</td>
+                    <td>${labWork.personalQualitiesMaximum}</td>
+                    <td>${labWork.personalQualitiesMinimum}</td>
+                    <td>${labWork.author.name}</td>
+                    <td>${labWork.author.weight}</td>
+                    <td>${labWork.author.eyeColor}</td>
+                    <td>${labWork.author.hairColor}</td>
+                    <td>${labWork.author.location.x}</td>
+                    <td>${labWork.author.location.y}</td>
+                    <td>${labWork.author.location.name}</td>
+                    <td>${labWork.author.passportID}</td>
+                    <td><button onclick="openFormModal(${labWork.id})">Edit</button></td>
+                    <td><button onclick="confirmDeleteLabWork(${labWork.id})">Delete</button></td>
+                `;
                 tableBody.appendChild(row);
             });
 
@@ -240,95 +258,50 @@
                 return;
             }
 
-            try {
-                const currentUserName = document.getElementById("userName").textContent;
+            removeRequiredIfHidden();
 
-                const response = await fetch(`/labworks/${labWorkId}/can-edit`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
+            const formData = new FormData(document.getElementById('labWorkForm'));
+
+            const labWorkDTO = {
+                id: labWorkId,
+                name: formData.get('name'),
+
+                coordinates: formData.get('coordinatesId') ? { id: formData.get('coordinatesId') } : {
+                    x: formData.get('newCoordinatesX'),
+                    y: formData.get('newCoordinatesY')
+                },
+
+                description: formData.get('description'),
+
+                difficulty: formData.get('difficulty'),
+
+                discipline: formData.get('disciplineId') ? { id: formData.get('disciplineId') } : {
+                    name: formData.get('newDisciplineName'),
+                    practiceHours: formData.get('newPracticeHours')
+                },
+
+                minimalPoint: formData.get('minimalPoint'),
+                personalQualitiesMinimum: formData.get('personalQualitiesMinimum'),
+                personalQualitiesMaximum: formData.get('personalQualitiesMaximum'),
+                author: formData.get('authorId') ? { id: formData.get('authorId')}  : {
+                    name: formData.get('newAuthorName'),
+                    weight: formData.get('newAuthorWeight'),
+                    location: formData.get('locationId') ? { id: formData.get('locationId') } : {
+                        name: formData.get('newLocationName'),
+                        x: formData.get('newLocationX'),
+                        y: formData.get('newLocationY')
                     },
-                });
+                    eyeColor: formData.get('newAuthorEyeColor'),
+                    hairColor: formData.get('newAuthorHairColor'),
+                    passportID: formData.get('passportID')
+                },
+                ownerName: document.getElementById("userName").textContent
+            };
 
-                if (response.ok) {
-                    const canEdit = await response.json();
-                    if (canEdit) {
-                        removeRequiredIfHidden();
+            stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));
 
-                        const formData = new FormData(document.getElementById('labWorkForm'));
-
-                        const labWorkDTO = {
-                            id: labWorkId,
-                            name: formData.get('name'),
-
-                            coordinates: formData.get('coordinatesId') ? { id: formData.get('coordinatesId') } : {
-                                x: formData.get('newCoordinatesX'),
-                                y: formData.get('newCoordinatesY')
-                            },
-
-                            description: formData.get('description'),
-
-                            difficulty: formData.get('difficulty'),
-
-                            discipline: formData.get('disciplineId') ? { id: formData.get('disciplineId') } : {
-                                name: formData.get('newDisciplineName'),
-                                practiceHours: formData.get('newPracticeHours')
-                            },
-
-                            minimalPoint: formData.get('minimalPoint'),
-                            personalQualitiesMinimum: formData.get('personalQualitiesMinimum'),
-                            personalQualitiesMaximum: formData.get('personalQualitiesMaximum'),
-                            author: formData.get('authorId') ? { id: formData.get('authorId')}  : {
-                                name: formData.get('newAuthorName'),
-                                weight: formData.get('newAuthorWeight'),
-                                location: formData.get('locationId') ? { id: formData.get('locationId') } : {
-                                    name: formData.get('newLocationName'),
-                                    x: formData.get('newLocationX'),
-                                    y: formData.get('newLocationY')
-                                },
-                                eyeColor: formData.get('newAuthorEyeColor'),
-                                hairColor: formData.get('newAuthorHairColor'),
-                                passportID: formData.get('passportID')
-                            },
-                            ownerName: document.getElementById("userName").textContent
-                        };
-
-                        stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));
-
-                        closeModal();
-                    } else {
-                        console.error('Permission denied to edit this lab work');
-                        Swal.fire({
-                            title: "Permission Denied",
-                            icon: "error",
-                            text: "You can only edit your own lab works.",
-                            confirmButtonText: "OK",
-                        });
-                    }
-                } else {
-                    console.error('Error checking edit permissions:', response.status);
-                    Swal.fire({
-                        title: "Error",
-                        icon: "error",
-                        text: "Could not check permissions for editing this Lab Work.",
-                        confirmButtonText: "OK",
-                    });
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                Swal.fire({
-                    title: "Error",
-                    icon: "error",
-                    text: "An error occurred while trying to edit the Lab Work.",
-                    confirmButtonText: "OK",
-                });
-            }
+            closeModal();
         }
-
-
-
-
-
 
         async function openEditModal(labWorkId) {
             document.getElementById('editModal').style.display = 'block';
@@ -614,7 +587,8 @@
             });
         }
 
-        function openFormModal(labWorkId = null) {
+        async function openFormModal(labWorkId = null) {
+
             document.getElementById("labWorkForm").reset();
 
             document.getElementById("newCoordinatesFields").style.display = "none";
@@ -626,18 +600,59 @@
             const submitButton = document.getElementById("submitButton");
 
             if (labWork) {
-                document.getElementById("modalTitle").textContent = "Edit Lab Work";
-                submitButton.textContent = "Update Lab Work";
-                submitButton.setAttribute("value", "update");
+                try {
+                    const currentUserName = document.getElementById("userName").textContent;
+
+                    const response = await fetch(`/labworks/${labWorkId}/can-edit`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+                    if (response.ok) {
+                        const canEdit = await response.json();
+                        if (canEdit) {
+                            document.getElementById("modalTitle").textContent = "Edit Lab Work";
+                            submitButton.textContent = "Update Lab Work";
+                            submitButton.setAttribute("value", "update");
 
 
-                document.getElementById("labWorkId").value = labWork.id || "";
-                document.getElementById("labWorkName").value = labWork.name || "";
-                document.getElementById("labWorkDescription").value = labWork.description || "";
-                document.getElementById("labWorkDifficulty").value = labWork.difficulty || "";
-                document.getElementById("minimalPoint").value = labWork.minimalPoint || "";
-                document.getElementById("personalQualitiesMinimum").value = labWork.personalQualitiesMinimum || "";
-                document.getElementById("personalQualitiesMaximum").value = labWork.personalQualitiesMaximum || "";
+                            document.getElementById("labWorkId").value = labWork.id || "";
+                            document.getElementById("labWorkName").value = labWork.name || "";
+                            document.getElementById("labWorkDescription").value = labWork.description || "";
+                            document.getElementById("labWorkDifficulty").value = labWork.difficulty || "";
+                            document.getElementById("minimalPoint").value = labWork.minimalPoint || "";
+                            document.getElementById("personalQualitiesMinimum").value = labWork.personalQualitiesMinimum || "";
+                            document.getElementById("personalQualitiesMaximum").value = labWork.personalQualitiesMaximum || "";
+                        } else {
+                            console.error('Permission denied to edit this lab work');
+                            Swal.fire({
+                                title: "Permission Denied",
+                                icon: "error",
+                                text: "You can only edit your own lab works.",
+                                confirmButtonText: "OK",
+                            });
+                        }
+                    } else {
+                        console.error('Permission denied to edit this lab work');
+                        Swal.fire({
+                            title: "Permission Denied",
+                            icon: "error",
+                            text: "You can only edit your own lab works.",
+                            confirmButtonText: "OK",
+                        });
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        title: "Error",
+                        icon: "error",
+                        text: "An error occurred while trying to edit the Lab Work.",
+                        confirmButtonText: "OK",
+                    });
+                }
             } else {
                 document.getElementById("modalTitle").textContent = "Add Lab Work";
                 submitButton.textContent = "Add Lab Work";
@@ -668,7 +683,7 @@
         }
 
 
-        function handleSubmit(event, labWorkId) {
+        async function handleSubmit(event, labWorkId) {
             event.preventDefault();
             const form = document.getElementById('labWorkForm');
             const formData = new FormData(form);
@@ -676,7 +691,6 @@
 
             const action = document.getElementById("submitButton").value;
 
-            alert("action: " + action + " labWorkId: " + labWorkId);
 
             if ((action === 'update' && labWorkId)) {
                 editLabWork(event, labWorkId);
@@ -689,6 +703,56 @@
         function closeModal() {
             document.getElementById("labWorkModal").style.display = "none";
         }
+
+        async function confirmDeleteLabWork(labWorkId) {
+            try {
+                const currentUserName = document.getElementById("userName").textContent;
+
+                const response = await fetch(`/labworks/${labWorkId}/can-edit`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    const canDelete = await response.json();
+                    if (canDelete) {
+
+                        stompClient.send('/app/labworks/delete', {}, JSON.stringify({
+                            labWorkId: labWorkId
+                        }));
+
+                    } else {
+                        console.error('Permission denied to edit this lab work');
+                        Swal.fire({
+                            title: "Permission Denied",
+                            icon: "error",
+                            text: "You can only edit your own lab works.",
+                            confirmButtonText: "OK",
+                        });
+                    }
+                }else {
+                    console.error('Permission denied to edit this lab work');
+                    Swal.fire({
+                        title: "Permission Denied",
+                        icon: "error",
+                        text: "You can only edit your own lab works.",
+                        confirmButtonText: "OK",
+                    });
+                }
+            }
+            catch (error){
+                console.error('Error:', error);
+                Swal.fire({
+                    title: "Error",
+                    icon: "error",
+                    text: "An error occurred while trying to edit the Lab Work.",
+                    confirmButtonText: "OK",
+                });
+            }
+        }
+
 
     </script>
 

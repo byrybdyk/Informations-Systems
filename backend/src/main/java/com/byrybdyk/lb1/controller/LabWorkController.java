@@ -2,11 +2,13 @@
 
     import com.byrybdyk.lb1.dto.LabWorkDTO;
     import com.byrybdyk.lb1.model.*;
+    import com.byrybdyk.lb1.model.util.LabWorkDeleteMessage;
     import com.byrybdyk.lb1.service.*;
     import org.springframework.beans.factory.annotation.Autowired;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
     import org.springframework.messaging.handler.annotation.MessageMapping;
+    import org.springframework.messaging.handler.annotation.Payload;
     import org.springframework.messaging.simp.SimpMessagingTemplate;
     import org.springframework.web.bind.annotation.*;
     import org.springframework.security.core.Authentication;
@@ -80,6 +82,22 @@
                 System.out.println("Message sent to /topic/labworks.");
 
                 return new ResponseEntity<>(HttpStatus.CREATED);
+            } catch (IllegalArgumentException e) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        @MessageMapping("/labworks/delete")
+        public ResponseEntity deleteLabWork(@Payload LabWorkDeleteMessage message, Principal principal) {
+            String username = principal.getName();
+            Long labWorkId = message.getLabWorkId();
+
+            try {
+                labWorkService.deleteLabWork(labWorkId, username);
+                LabWorkDeleteMessage deleteMessage = new LabWorkDeleteMessage(labWorkId);
+                deleteMessage.setType("delete");
+                messagingTemplate.convertAndSend("/topic/labworks", deleteMessage);
+                return new ResponseEntity<>(HttpStatus.OK);
             } catch (IllegalArgumentException e) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }

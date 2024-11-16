@@ -134,12 +134,13 @@ public class LabWorkService {
         }
     }
 
-    public void deleteLabWork(Long labWorkId) {
+    public void deleteLabWork(Long labWorkId, String currentUserName) {
         Optional<LabWork> existingLabWorkOpt = labWorkRepository.findById(labWorkId);
         if (existingLabWorkOpt.isPresent()) {
             LabWork labWork = existingLabWorkOpt.get();
 
-            User currentUser = userService.getCurrentAuthenticatedUser();
+            User currentUser = userRepository.findByUsername(currentUserName)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
             saveLabWorkHistory(labWork, ChangeType.DELETE, currentUser);
 
             labWorkRepository.delete(labWork);
