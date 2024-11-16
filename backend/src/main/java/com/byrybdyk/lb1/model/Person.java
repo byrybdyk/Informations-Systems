@@ -22,7 +22,7 @@ public class Person {
     @Column(name = "hair_color")
     private Color hairColor;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(optional = false)
     @JoinColumn(name = "location_id", nullable = false)
     private Location location;
 
