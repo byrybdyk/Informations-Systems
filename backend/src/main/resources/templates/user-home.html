@@ -148,7 +148,7 @@
             <td>${labWork.author.location.y}</td>
             <td>${labWork.author.location.name}</td>
             <td>${labWork.author.passportID}</td>
-            <td><button onclick="handleSubmit(event, ${labWork.id})">Edit</button></td>
+            <td><button onclick="openFormModal(${labWork.id})">Edit</button></td>
         `;
                 tableBody.appendChild(row);
             });
@@ -228,13 +228,10 @@
         }
 
 
-        async function editLabWork(event) {
-            event.preventDefault();
-
-            const form = event.target;
-            const labWorkId = form.querySelector('[data-id]').getAttribute('data-id');
-
-            alert("labWorkId: " + labWorkId);
+        async function editLabWork(event, labWorkId) {
+            if (event && event.preventDefault) {
+                event.preventDefault();
+            }
 
             const labWork = labWorks.find(work => work.id === Number(labWorkId));
 
@@ -256,65 +253,49 @@
                 if (response.ok) {
                     const canEdit = await response.json();
                     if (canEdit) {
-                        document.getElementById('editLabWorkId').value = labWork.id;
-                        document.getElementById('editLabWorkName').value = labWork.name;
-                        document.getElementById('editLabWorkDescription').value = labWork.description;
-                        document.getElementById('editLabWorkDifficulty').value = labWork.difficulty;
-                        document.getElementById('editLabWorkMinimalPoint').value = labWork.minimalPoint;
-                        document.getElementById('editLabWorkPersonalQualitiesMax').value = labWork.personalQualitiesMaximum;
-                        document.getElementById('editLabWorkPersonalQualitiesMin').value = labWork.personalQualitiesMinimum;
+                        removeRequiredIfHidden();
 
-                        if (labWork.coordinates) {
-                            document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x;
-                            document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y;
-                        }
+                        const formData = new FormData(document.getElementById('labWorkForm'));
 
-                        if (labWork.disciplines && labWork.disciplines.length > 0) {
-                            populateSelectEditOptions('editLabWorkDisciplineId', labWork.disciplines, 'name', labWork.discipline ? labWork.discipline.id : null);
-                        }
+                        const labWorkDTO = {
+                            id: labWorkId,
+                            name: formData.get('name'),
 
-                        if (labWork.authors && labWork.authors.length > 0) {
-                            populateSelectEditOptions('editLabWorkAuthorId', labWork.authors, 'name', labWork.author ? labWork.author.id : null);
-                        }
+                            coordinates: formData.get('coordinatesId') ? { id: formData.get('coordinatesId') } : {
+                                x: formData.get('newCoordinatesX'),
+                                y: formData.get('newCoordinatesY')
+                            },
 
-                        if (labWork.locations && labWork.locations.length > 0) {
-                            populateSelectEditOptions('editLabWorkLocationId', labWork.locations, 'name', labWork.location ? labWork.location.id : null);
-                        }
+                            description: formData.get('description'),
 
-                        if (labWork.author) {
-                            if (document.getElementById('editLabWorkAuthorName')) {
-                                document.getElementById('editLabWorkAuthorName').value = labWork.author.name || '';
-                            }
-                            if (document.getElementById('editLabWorkAuthorWeight')) {
-                                document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight || '';
-                            }
-                            if (document.getElementById('editLabWorkAuthorEyeColor')) {
-                                document.getElementById('editLabWorkAuthorEyeColor').value = labWork.author.eyeColor || '';
-                            }
-                            if (document.getElementById('editLabWorkAuthorHairColor')) {
-                                document.getElementById('editLabWorkAuthorHairColor').value = labWork.author.hairColor || '';
-                            }
+                            difficulty: formData.get('difficulty'),
 
-                            if (labWork.author.location) {
-                                if (document.getElementById('editLabWorkLocationX')) {
-                                    document.getElementById('editLabWorkLocationX').value = labWork.author.location.x || '';
-                                }
-                                if (document.getElementById('editLabWorkLocationY')) {
-                                    document.getElementById('editLabWorkLocationY').value = labWork.author.location.y || '';
-                                }
-                                if (document.getElementById('editLabWorkLocationName')) {
-                                    document.getElementById('editLabWorkLocationName').value = labWork.author.location.name || '';
-                                }
-                            }
+                            discipline: formData.get('disciplineId') ? { id: formData.get('disciplineId') } : {
+                                name: formData.get('newDisciplineName'),
+                                practiceHours: formData.get('newPracticeHours')
+                            },
 
-                            if (document.getElementById('editLabWorkPassportID')) {
-                                document.getElementById('editLabWorkPassportID').value = labWork.author.passportID || '';
-                            }
-                        }
+                            minimalPoint: formData.get('minimalPoint'),
+                            personalQualitiesMinimum: formData.get('personalQualitiesMinimum'),
+                            personalQualitiesMaximum: formData.get('personalQualitiesMaximum'),
+                            author: formData.get('authorId') ? { id: formData.get('authorId')}  : {
+                                name: formData.get('newAuthorName'),
+                                weight: formData.get('newAuthorWeight'),
+                                location: formData.get('locationId') ? { id: formData.get('locationId') } : {
+                                    name: formData.get('newLocationName'),
+                                    x: formData.get('newLocationX'),
+                                    y: formData.get('newLocationY')
+                                },
+                                eyeColor: formData.get('newAuthorEyeColor'),
+                                hairColor: formData.get('newAuthorHairColor'),
+                                passportID: formData.get('passportID')
+                            },
+                            ownerName: document.getElementById("userName").textContent
+                        };
 
-                        document.getElementById('editModal').style.display = 'block';
+                        stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));
 
-                        updateLabWork(event, labWork.id);
+                        closeModal();
                     } else {
                         console.error('Permission denied to edit this lab work');
                         Swal.fire({
@@ -343,6 +324,7 @@
                 });
             }
         }
+
 
 
 
@@ -423,9 +405,6 @@
         }
 
 
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
 
 
         async function updateLabWork(event, labWorkId) {
@@ -595,32 +574,6 @@
                 ("00" + date.getUTCMilliseconds()).slice(-3);
         }
 
-        function openAddModal() {
-            document.getElementById('addLabWorkModal').style.display = 'block';
-
-            fetch('/labworks/form-data')
-                .then(response => response.json())
-                .then(data => {
-                    populateSelectOptions('disciplineId', data.disciplines, 'name');
-                    populateSelectOptions('coordinatesId', data.coordinates, coord => `X: ${coord.x}, Y: ${coord.y}`);
-                    populateSelectOptions('authorId', data.authors, 'name');
-
-                    populateSelectOptions('locationId', data.locations, 'name');
-
-                    if (data.authors && data.authors.length > 0) {
-                        const firstAuthor = data.authors[0];
-                        document.getElementById('locationId').value = firstAuthor.location ? firstAuthor.location.id : '';
-                    }
-
-                })
-                .catch(error => {
-                    console.error('Error fetching form data:', error);
-                });
-        }
-
-        function closeAddModal() {
-            document.getElementById('addLabWorkModal').style.display = 'none';
-        }
 
         function populateSelectEditOptions(elementId, options, labelKey, selectedValue) {
             const selectElement = document.getElementById(elementId);
@@ -661,8 +614,7 @@
             });
         }
 
-        function openFormModal(labWork = null) {
-
+        function openFormModal(labWorkId = null) {
             document.getElementById("labWorkForm").reset();
 
             document.getElementById("newCoordinatesFields").style.display = "none";
@@ -670,42 +622,43 @@
             document.getElementById("newAuthorFields").style.display = "none";
             document.getElementById("newLocationFields").style.display = "none";
 
+            let labWork = labWorks.find(item => item.id === labWorkId);
+            const submitButton = document.getElementById("submitButton");
+
             if (labWork) {
                 document.getElementById("modalTitle").textContent = "Edit Lab Work";
-                document.getElementById("submitButton").textContent = "Update Lab Work";
+                submitButton.textContent = "Update Lab Work";
+                submitButton.setAttribute("value", "update");
 
-                document.getElementById("labWorkId").value = labWork.id;
-                document.getElementById("labWorkName").value = labWork.name;
-                document.getElementById("coordinatesId").value = labWork.coordinatesId || "";
+
+                document.getElementById("labWorkId").value = labWork.id || "";
+                document.getElementById("labWorkName").value = labWork.name || "";
                 document.getElementById("labWorkDescription").value = labWork.description || "";
                 document.getElementById("labWorkDifficulty").value = labWork.difficulty || "";
-                document.getElementById("disciplineId").value = labWork.disciplineId || "";
                 document.getElementById("minimalPoint").value = labWork.minimalPoint || "";
                 document.getElementById("personalQualitiesMinimum").value = labWork.personalQualitiesMinimum || "";
                 document.getElementById("personalQualitiesMaximum").value = labWork.personalQualitiesMaximum || "";
-                document.getElementById("authorId").value = labWork.authorId || "";
-                document.getElementById("locationId").value = labWork.locationId || "";
-
             } else {
                 document.getElementById("modalTitle").textContent = "Add Lab Work";
-                document.getElementById("submitButton").textContent = "Add Lab Work";
-
+                submitButton.textContent = "Add Lab Work";
+                submitButton.setAttribute("value", "add");
             }
 
             fetch('/labworks/form-data')
                 .then(response => response.json())
                 .then(data => {
+                    // Заполняем выпадающие списки
                     populateSelectOptions('disciplineId', data.disciplines, 'name');
                     populateSelectOptions('coordinatesId', data.coordinates, coord => `X: ${coord.x}, Y: ${coord.y}`);
                     populateSelectOptions('authorId', data.authors, 'name');
-
                     populateSelectOptions('locationId', data.locations, 'name');
 
-                    if (data.authors && data.authors.length > 0) {
-                        const firstAuthor = data.authors[0];
-                        document.getElementById('locationId').value = firstAuthor.location ? firstAuthor.location.id : '';
+                    if (labWork) {
+                        document.getElementById("coordinatesId").value = labWork.coordinates.id || "";
+                        document.getElementById("disciplineId").value = labWork.discipline.id || "";
+                        document.getElementById("authorId").value = labWork.author.id || "";
+                        document.getElementById("locationId").value = labWork.author.location.id || "";
                     }
-
                 })
                 .catch(error => {
                     console.error('Error fetching form data:', error);
@@ -714,15 +667,21 @@
             document.getElementById("labWorkModal").style.display = "block";
         }
 
-        function handleSubmit(event) {
+
+        function handleSubmit(event, labWorkId) {
             event.preventDefault();
-            const formData = new FormData(event.target);
+            const form = document.getElementById('labWorkForm');
+            const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
 
-            if (data.id) {
-                editLabWork();
+            const action = document.getElementById("submitButton").value;
+
+            alert("action: " + action + " labWorkId: " + labWorkId);
+
+            if ((action === 'update' && labWorkId)) {
+                editLabWork(event, labWorkId);
             } else {
-                addLabWork();
+                addLabWork(data);
             }
             closeModal();
         }
@@ -745,18 +704,18 @@
     <div class="modal-content">
         <span class="close" onclick="closeModal()">&times;</span>
         <h2 id="modalTitle">Add Lab Work</h2>
-        <form id="labWorkForm" onsubmit="handleSubmit(event)">
+        <form id="labWorkForm" onsubmit="handleSubmit(event, document.getElementById('labWorkId').value)">
             <input type="hidden" id="labWorkId" name="id">
 
             <label for="name">Lab Work Name:</label>
-            <input type="text" name="name" placeholder="Lab Work Name" >
+            <input type="text" name="name" id="labWorkName" placeholder="Lab Work Name" >
 
             <label for="coordinatesId">Coordinates:</label>
             <select name="coordinatesId" id="coordinatesId" onchange="toggleCreateCoordinates()">
                 <option value="">-- Select Coordinates --</option>
             </select>
 
-            <button type="button" onclick="createNewCoordinates()()">Create New Coordinates</button>
+            <button type="button" onclick="createNewCoordinates()">Create New Coordinates</button>
 
             <div id="newCoordinatesFields" style="display:none;">
                 <input type="number" name="newCoordinatesX" placeholder="New Coordinates X" >
@@ -764,10 +723,10 @@
             </div>
 
             <label for="description">Description:</label>
-            <input type="text" name="description" placeholder="Description" >
+            <input type="text" name="description" id="labWorkDescription" placeholder="Description" >
 
             <label for="difficulty">Difficulty:</label>
-            <input type="text" name="difficulty" placeholder="Difficulty" >
+            <input type="text" name="difficulty" id="labWorkDifficulty" placeholder="Difficulty" >
 
             <label for="disciplineId">Discipline:</label>
             <select name="disciplineId" id="disciplineId" onchange="toggleCreateDiscipline()">
@@ -782,13 +741,13 @@
             </div>
 
             <label for="minimal_point">Minimal_point:</label>
-            <input type="number" name="minimalPoint" placeholder="Minimal Point" >
+            <input type="number" name="minimalPoint" id="minimalPoint" placeholder="Minimal Point" >
 
             <label for="personal_qualities_minimum">Personal Qualities Minimum:</label>
-            <input type="number" name="personalQualitiesMinimum" placeholder="Personal Qualities Minimum" >
+            <input type="number" name="personalQualitiesMinimum" id="personalQualitiesMinimum" placeholder="Personal Qualities Minimum" >
 
             <label for="personal_qualities_maximum">Personal Qualities Maximum:</label>
-            <input type="number" name="personalQualitiesMaximum" placeholder="Personal Qualities Maximum" >
+            <input type="number" name="personalQualitiesMaximum" id="personalQualitiesMaximum" placeholder="Personal Qualities Maximum" >
 
 
             <label for="authorId">Author:</label>
@@ -817,7 +776,7 @@
                 </div>
             </div>
 
-            <button type="submit" id="submitButton">Add Lab Work</button>
+            <button type="submit" id="submitButton" name="action" value="add">Add Lab Work</button>
         </form>
     </div>
 </div>
