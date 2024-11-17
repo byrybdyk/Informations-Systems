@@ -5,6 +5,9 @@
     import com.byrybdyk.lb1.model.util.LabWorkDeleteMessage;
     import com.byrybdyk.lb1.service.*;
     import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.data.domain.Page;
+    import org.springframework.data.domain.PageRequest;
+    import org.springframework.data.domain.Pageable;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
     import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -15,7 +18,9 @@
     import org.springframework.security.core.context.SecurityContextHolder;
 
     import java.security.Principal;
+    import java.util.HashMap;
     import java.util.List;
+    import java.util.Map;
     import java.util.Optional;
 
     @RestController
@@ -160,6 +165,20 @@
         @GetMapping("/findByDescriptionPrefix")
         public ResponseEntity<List<LabWork>> findByDescriptionPrefix(@RequestParam String prefix) {
             return ResponseEntity.ok(labWorkService.findByDescriptionPrefix(prefix));
+        }
+
+        @GetMapping("/home")
+        public ResponseEntity<Map<String, Object>> showUserHome(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "10") int size, Authentication authentication) {
+
+            Pageable pageable = PageRequest.of(page - 1, size);
+            Page<LabWork> labWorksPage = labWorkService.getLabWorksPage(pageable);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("labWorks", labWorksPage.getContent());
+            response.put("currentPage", page);
+            response.put("totalPages", labWorksPage.getTotalPages());
+
+            return ResponseEntity.ok(response);
         }
 
 //        @PostMapping("/decreaseDifficulty")

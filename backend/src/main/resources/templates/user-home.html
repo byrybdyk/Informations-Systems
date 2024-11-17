@@ -110,39 +110,8 @@
                 return;
             }
 
-            const existingIndex = labWorks.findIndex(item => item.id === labWork.id);
-            if (existingIndex !== -1) {
-                labWorks[existingIndex] = labWork;
-            } else {
-                labWorks.push(labWork);
-            }
-
-            renderTable(currentPage);
-        }
-
-        function onLabWorkDelete(labWorkId) {
-            labWorks = labWorks.filter(labWork => labWork.id !== labWorkId);
-
-            const row = document.querySelector(`tr[data-id="${labWorkId}"]`);
+            const row = document.querySelector(`tr[data-id="${labWork.id}"]`);
             if (row) {
-                row.remove();
-                console.log(`LabWork with ID ${labWorkId} has been deleted from the table.`);
-            }
-
-            renderTable(currentPage);
-        }
-
-        function renderTable(page) {
-            totalPages = Math.ceil(labWorks.length / pageSize);
-            const tableBody = document.getElementById('labWorkTableBody');
-            tableBody.innerHTML = "";
-            const start = (page - 1) * pageSize;
-            const end = start + pageSize;
-            const paginatedItems = labWorks.slice(start, end);
-
-            paginatedItems.forEach(labWork => {
-                const row = document.createElement('tr');
-                row.setAttribute('data-id', labWork.id);
                 row.innerHTML = `
                     <td>${labWork.id}</td>
                     <td>${labWork.owner_id.username}</td>
@@ -168,11 +137,68 @@
                     <td><button onclick="openFormModal(${labWork.id})">Edit</button></td>
                     <td><button onclick="confirmDeleteLabWork(${labWork.id})">Delete</button></td>
                 `;
-                tableBody.appendChild(row);
-            });
+            }
+        }
 
-            document.getElementById('currentPage').textContent = currentPage;
-            document.getElementById('totalPages').textContent = totalPages;
+        function onLabWorkDelete(labWorkId) {
+            labWorks = labWorks.filter(labWork => labWork.id !== labWorkId);
+
+            const row = document.querySelector(`tr[data-id="${labWorkId}"]`);
+            if (row) {
+                row.remove();
+                console.log(`LabWork with ID ${labWorkId} has been deleted from the table.`);
+            }
+
+            renderTable(currentPage);
+        }
+
+        function renderTable(page) {
+            const pageSize = 6;
+            const url = `/labworks/home?page=${page}&size=${pageSize}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('labWorkTableBody');
+                    tableBody.innerHTML = "";
+                    data.labWorks.forEach(labWork => {
+                        const row = document.createElement('tr');
+                        row.setAttribute('data-id', labWork.id);
+                        row.innerHTML = `
+                    <td>${labWork.id}</td>
+                    <td>${labWork.owner_id.username}</td>
+                    <td>${formatUTCDate(labWork.creationDate)}</td>
+                    <td>${labWork.name}</td>
+                    <td>${labWork.discipline.name}</td>
+                    <td>${labWork.discipline.practiceHours}</td>
+                    <td>${labWork.description}</td>
+                    <td>${labWork.difficulty}</td>
+                    <td>${labWork.coordinates.x}</td>
+                    <td>${labWork.coordinates.y}</td>
+                    <td>${labWork.minimalPoint}</td>
+                    <td>${labWork.personalQualitiesMaximum}</td>
+                    <td>${labWork.personalQualitiesMinimum}</td>
+                    <td>${labWork.author.name}</td>
+                    <td>${labWork.author.weight}</td>
+                    <td>${labWork.author.eyeColor}</td>
+                    <td>${labWork.author.hairColor}</td>
+                    <td>${labWork.author.location.x}</td>
+                    <td>${labWork.author.location.y}</td>
+                    <td>${labWork.author.location.name}</td>
+                    <td>${labWork.author.passportID}</td>
+                    <td><button onclick="openFormModal(${labWork.id})">Edit</button></td>
+                    <td><button onclick="confirmDeleteLabWork(${labWork.id})">Delete</button></td>
+                `;
+                        tableBody.appendChild(row);
+                    });
+
+                    currentPage = data.currentPage;
+                    totalPages = data.totalPages;
+
+                    document.getElementById('currentPage').textContent = currentPage;
+                    document.getElementById('totalPages').textContent = totalPages;
+                })
+                .catch(error => console.error('Error:', error));
         }
 
         function nextPage() {
@@ -251,11 +277,23 @@
                 event.preventDefault();
             }
 
-            const labWork = labWorks.find(work => work.id === Number(labWorkId));
+            let labWork = null;
+            labWork = labWorks.find(work => work.id === Number(labWorkId));
 
             if (!labWork) {
-                alert('Lab Work not found');
-                return;
+                try {
+                    const response = await fetch(`/labworks/${labWorkId}`);
+                    if (response.ok) {
+                        labWork = await response.json();
+                    } else {
+                        alert('Lab Work not found');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error fetching lab work:', error);
+                    alert('Error fetching lab work data');
+                    return;
+                }
             }
 
             removeRequiredIfHidden();
@@ -588,7 +626,6 @@
         }
 
         async function openFormModal(labWorkId = null) {
-
             document.getElementById("labWorkForm").reset();
 
             document.getElementById("newCoordinatesFields").style.display = "none";
@@ -596,7 +633,34 @@
             document.getElementById("newAuthorFields").style.display = "none";
             document.getElementById("newLocationFields").style.display = "none";
 
-            let labWork = labWorks.find(item => item.id === labWorkId);
+            let labWork = null;
+            if (labWorkId) {
+                try {
+                    const response = await fetch(`/labworks/${labWorkId}`);
+                    if (response.ok) {
+                        labWork = await response.json();
+                    } else {
+                        console.error('Lab work not found');
+                        Swal.fire({
+                            title: "Error",
+                            icon: "error",
+                            text: "Lab Work not found.",
+                            confirmButtonText: "OK",
+                        });
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error fetching lab work data:', error);
+                    Swal.fire({
+                        title: "Error",
+                        icon: "error",
+                        text: "An error occurred while fetching the lab work data.",
+                        confirmButtonText: "OK",
+                    });
+                    return;
+                }
+            }
+
             const submitButton = document.getElementById("submitButton");
 
             if (labWork) {
@@ -616,7 +680,6 @@
                             document.getElementById("modalTitle").textContent = "Edit Lab Work";
                             submitButton.textContent = "Update Lab Work";
                             submitButton.setAttribute("value", "update");
-
 
                             document.getElementById("labWorkId").value = labWork.id || "";
                             document.getElementById("labWorkName").value = labWork.name || "";

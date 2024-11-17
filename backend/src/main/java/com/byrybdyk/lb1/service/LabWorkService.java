@@ -6,6 +6,8 @@ import com.byrybdyk.lb1.model.enums.ChangeType;
 import com.byrybdyk.lb1.model.enums.Difficulty;
 import com.byrybdyk.lb1.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -220,5 +222,9 @@ public class LabWorkService {
 
         labWork.setDiscipline(null);
         labWorkRepository.save(labWork);
+    }
+
+    public Page<LabWork> getLabWorksPage(Pageable pageable) {
+        return labWorkRepository.findAll(pageable);
     }
 }
