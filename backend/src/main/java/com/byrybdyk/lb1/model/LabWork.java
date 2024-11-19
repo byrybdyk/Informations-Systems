@@ -51,8 +51,8 @@ public class LabWork {
     private Person author;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "owner_id", nullable = false)
-    private User owner_id;
+    @JoinColumn(name = "owner", nullable = false)
+    private User owner;
 
 
     @PrePersist
@@ -144,11 +144,11 @@ public class LabWork {
         this.author = author;
     }
 
-    public User getOwner_id() {
-        return owner_id;
+    public User getOwner() {
+        return owner;
     }
 
-    public void setOwner_id(User owner_id) {
-        this.owner_id = owner_id;
+    public void setOwner(User owner_id) {
+        this.owner = owner_id;
     }
 }

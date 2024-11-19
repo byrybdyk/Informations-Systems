@@ -9,7 +9,7 @@ public class PersonDTO {
     private Color hairColor;
     private LocationDTO location;
     private double weight;
-    private String passportID;
+    private Integer passportID;
 
     public long getId() {
         return id;
@@ -44,11 +44,11 @@ public class PersonDTO {
         this.weight = weight;
     }
 
-    public String getPassportID() {
+    public Integer getPassportID() {
         return passportID;
     }
 
-    public void setPassportID(String passportID) {
+    public void setPassportID(Integer passportID) {
         this.passportID = passportID;
     }
 

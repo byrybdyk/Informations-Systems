@@ -30,7 +30,7 @@ public class Person {
     private double weight;
 
     @Column(name = "passport_id", nullable = false)
-    private String passportID;
+    private Integer passportID;
 
     @Column(name = "dtype", nullable = false)
     private String dtype = "DEFAULT_PERSON_TYPE";
@@ -92,11 +92,11 @@ public class Person {
         this.weight = weight;
     }
 
-    public String getPassportID() {
+    public Integer getPassportID() {
         return passportID;
     }
 
-    public void setPassportID(String passportID) {
+    public void setPassportID(Integer passportID) {
         this.passportID = passportID;
     }
 }
