@@ -8,13 +8,10 @@ import com.byrybdyk.lb1.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,7 +58,7 @@ public class LabWorkService {
         labWork.setPersonalQualitiesMinimum(labWorkDTO.getPersonalQualitiesMinimum());
         labWork.setPersonalQualitiesMaximum(labWorkDTO.getPersonalQualitiesMaximum());
         labWork.setAuthor(author);
-        labWork.setOwner_id(owner);
+        labWork.setOwner(owner);
     }
 
     public LabWork createLabWorkFromDTO(LabWorkDTO labWorkDTO) {
@@ -152,7 +149,7 @@ public class LabWorkService {
     public boolean canThisUserEditLabWork(LabWork labWork, String currentUsername) {
         try {
             User currentUser = userService.getUserByUsername(currentUsername);
-            return labWork.getOwner_id().getId() == currentUser.getId() || currentUser.getRole().equals(currentUser.getRole().ADMIN);
+            return labWork.getOwner().getId() == currentUser.getId() || currentUser.getRole().equals(currentUser.getRole().ADMIN);
         } catch (Exception e) {
             System.out.println("Error while checking edit permissions: " + e.getMessage());
             return false;
@@ -174,7 +171,7 @@ public class LabWorkService {
         history.setPersonalQualitiesMinimum(labWork.getPersonalQualitiesMinimum());
         history.setPersonalQualitiesMaximum(labWork.getPersonalQualitiesMaximum());
         history.setAuthor(labWork.getAuthor());
-        history.setOwner_id(labWork.getOwner_id());
+        history.setOwner_id(labWork.getOwner());
         history.setChangeType(changeType);
         history.setChangedBy(changedBy);
         history.setCoordinates(labWork.getCoordinates());

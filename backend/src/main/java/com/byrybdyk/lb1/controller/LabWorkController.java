@@ -8,6 +8,7 @@
     import org.springframework.data.domain.Page;
     import org.springframework.data.domain.PageRequest;
     import org.springframework.data.domain.Pageable;
+    import org.springframework.data.domain.Sort;
     import org.springframework.http.HttpStatus;
     import org.springframework.http.ResponseEntity;
     import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -15,7 +16,6 @@
     import org.springframework.messaging.simp.SimpMessagingTemplate;
     import org.springframework.web.bind.annotation.*;
     import org.springframework.security.core.Authentication;
-    import org.springframework.security.core.context.SecurityContextHolder;
 
     import java.security.Principal;
     import java.util.HashMap;
@@ -135,7 +135,7 @@
                 }
 
                 LabWork labWork = existingLabWorkOpt.get();
-                System.out.println("LabWork ID: " + labWork.getId() + ", Owner ID: " + labWork.getOwner_id().getId());
+                System.out.println("LabWork ID: " + labWork.getId() + ", Owner ID: " + labWork.getOwner().getId());
 
                 boolean canEdit = labWorkService.canThisUserEditLabWork(labWork, currentUsername);
                 System.out.println("Can edit ПОЛУЧЕН" + canEdit);
@@ -168,9 +168,19 @@
         }
 
         @GetMapping("/home")
-        public ResponseEntity<Map<String, Object>> showUserHome(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "10") int size, Authentication authentication) {
+        public ResponseEntity<Map<String, Object>> showUserHome(
+                @RequestParam(defaultValue = "1") int page,
+                @RequestParam(defaultValue = "10") int size,
+                @RequestParam(required = false) String sort,
+                @RequestParam(defaultValue = "asc") String order) {
 
-            Pageable pageable = PageRequest.of(page - 1, size);
+            Sort sorting = Sort.unsorted();
+            if (sort != null) {
+                sorting = Sort.by(order.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sort);
+            }
+
+            Pageable pageable = PageRequest.of(page - 1, size, sorting);
+
             Page<LabWork> labWorksPage = labWorkService.getLabWorksPage(pageable);
 
             Map<String, Object> response = new HashMap<>();

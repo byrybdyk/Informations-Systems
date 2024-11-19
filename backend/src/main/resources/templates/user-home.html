@@ -78,6 +78,8 @@
         const pageSize = 5;
         let currentPage = 1;
         let totalPages = 1;
+        let currentSortColumn = null;
+        let currentSortOrder = 'asc';
 
         function connect() {
             var socket = new SockJS('/ws');
@@ -114,7 +116,7 @@
             if (row) {
                 row.innerHTML = `
                     <td>${labWork.id}</td>
-                    <td>${labWork.owner_id.username}</td>
+                    <td>${labWork.owner.username}</td>
                     <td>${formatUTCDate(labWork.creationDate)}</td>
                     <td>${labWork.name}</td>
                     <td>${labWork.discipline.name}</td>
@@ -157,7 +159,11 @@
 
         function renderTable(page) {
             const pageSize = 6;
-            const url = `/labworks/home?page=${page}&size=${pageSize}`;
+            let url = `/labworks/home?page=${page}&size=${pageSize}`;
+
+            if (currentSortColumn) {
+                url += `&sort=${currentSortColumn}&order=${currentSortOrder}`;
+            }
 
             fetch(url)
                 .then(response => response.json())
@@ -169,7 +175,7 @@
                         row.setAttribute('data-id', labWork.id);
                         row.innerHTML = `
                     <td>${labWork.id}</td>
-                    <td>${labWork.owner_id.username}</td>
+                    <td>${labWork.owner.username}</td>
                     <td>${formatUTCDate(labWork.creationDate)}</td>
                     <td>${labWork.name}</td>
                     <td>${labWork.discipline.name}</td>
@@ -820,6 +826,19 @@
         }
 
 
+
+        function applySorting(column) {
+            if (currentSortColumn === column) {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortOrder = 'asc';
+            }
+
+            renderTable(currentPage);
+        }
+
+
     </script>
 
 </head>
@@ -916,27 +935,27 @@
     <table id="labWorkTable">
         <thead>
         <tr>
-            <th>ID</th>
-            <th>Owner</th>
-            <th>Creation Date</th>
-            <th>Name</th>
-            <th>Discipline Name</th>
-            <th>Practice Hours</th>
-            <th>Description</th>
-            <th>Difficulty</th>
-            <th>Coordinates X</th>
-            <th>Coordinates Y</th>
-            <th>Minimal Point</th>
-            <th>Personal Qualities Max</th>
-            <th>Personal Qualities Min</th>
-            <th>Author Name</th>
-            <th>Author Weight</th>
-            <th>Author Eye Color</th>
-            <th>Author Hair Color</th>
-            <th>Location X</th>
-            <th>Location Y</th>
-            <th>Location Name</th>
-            <th>Passport ID</th>
+            <th onclick="applySorting('id')">ID</th>
+            <th onclick="applySorting('ownerUsername')">Owner</th>
+            <th onclick="applySorting('creationDate')">Creation Date</th>
+            <th onclick="applySorting('name')">Name</th>
+            <th onclick="applySorting('disciplineName')">Discipline Name</th>
+            <th onclick="applySorting('disciplinePracticeHours')">Practice Hours</th>
+            <th onclick="applySorting('description')">Description</th>
+            <th onclick="applySorting('difficulty')">Difficulty</th>
+            <th onclick="applySorting('coordinatesX')">Coordinates X</th>
+            <th onclick="applySorting('coordinatesY')">Coordinates Y</th>
+            <th onclick="applySorting('minimalPoint')">Minimal Point</th>
+            <th onclick="applySorting('personalQualitiesMaximum')">Personal Qualities Max</th>
+            <th onclick="applySorting('personalQualitiesMinimum')">Personal Qualities Min</th>
+            <th onclick="applySorting('authorName')">Author Name</th>
+            <th onclick="applySorting('authorWeight')">Author Weight</th>
+            <th onclick="applySorting('authorEyeColor')">Author Eye Color</th>
+            <th onclick="applySorting('authorHairColor')">Author Hair Color</th>
+            <th onclick="applySorting('authorLocationX')">Location X</th>
+            <th onclick="applySorting('authorLocationY')">Location Y</th>
+            <th onclick="applySorting('authorLocationName')">Location Name</th>
+            <th onclick="applySorting('authorPassportID')">Passport ID</th>
             <th>Actions</th>
         </tr>
         </thead>
