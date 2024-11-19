@@ -138,6 +138,9 @@
                     <td><button onclick="confirmDeleteLabWork(${labWork.id})">Delete</button></td>
                 `;
             }
+            else{
+                renderTable(currentPage);
+            }
         }
 
         function onLabWorkDelete(labWorkId) {
