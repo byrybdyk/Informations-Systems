@@ -53,16 +53,15 @@
 <div class="container">
     <h2>Special Operations on LabWorks</h2>
 
-    <!-- Удалить объект по автору -->
+
     <div class="operation">
-        <h3>Delete LabWork by Author</h3>
-        <label for="deleteAuthor">Author Name:</label>
-        <input type="text" id="deleteAuthor" placeholder="Enter author name">
+        <h3>Delete LabWork by AuthorId</h3>
+        <label for="deleteAuthor">Author Id:</label>
+        <input type="text" id="deleteAuthor" placeholder="Enter author Id">
         <button onclick="deleteByAuthor()">Delete</button>
         <div id="deleteResult" class="result"></div>
     </div>
 
-    <!-- Количество объектов с author меньше заданного -->
     <div class="operation">
         <h3>Count LabWorks with Author Less Than Given</h3>
         <label for="countAuthor">Author Name:</label>
@@ -71,7 +70,6 @@
         <div id="countResult" class="result"></div>
     </div>
 
-    <!-- Массив объектов по началу строки в description -->
     <div class="operation">
         <h3>Find LabWorks by Description Prefix</h3>
         <label for="descriptionPrefix">Description Prefix:</label>
@@ -80,7 +78,6 @@
         <div id="findResult" class="result"></div>
     </div>
 
-    <!-- Понизить сложность лабораторной работы -->
     <div class="operation">
         <h3>Decrease LabWork Difficulty</h3>
         <label for="labWorkId">LabWork ID:</label>
@@ -91,7 +88,6 @@
         <div id="decreaseResult" class="result"></div>
     </div>
 
-    <!-- Удалить лабораторную работу из дисциплины -->
     <div class="operation">
         <h3>Remove LabWork from Discipline</h3>
         <label for="labWorkDisciplineId">LabWork ID:</label>
@@ -100,10 +96,11 @@
         <div id="removeResult" class="result"></div>
     </div>
 
+    <a href="/admin/home">Back to home</a>
+
 </div>
 
 <script>
-    // Функция для удаления объекта по автору
     async function deleteByAuthor() {
         const author = document.getElementById('deleteAuthor').value;
         const response = await fetch(`/labworks/deleteByAuthor/${author}`, { method: 'DELETE' });
@@ -111,7 +108,6 @@
         document.getElementById('deleteResult').textContent = result;
     }
 
-    // Функция для получения количества объектов с author меньше заданного
     async function countByAuthor() {
         const author = document.getElementById('countAuthor').value;
         const response = await fetch(`/labworks/countByAuthor?author=${author}`);
@@ -119,7 +115,6 @@
         document.getElementById('countResult').textContent = `Count: ${count}`;
     }
 
-    // Функция для поиска по префиксу в описании
     async function findByDescriptionPrefix() {
         const prefix = document.getElementById('descriptionPrefix').value;
         const response = await fetch(`/labworks/findByDescriptionPrefix?prefix=${prefix}`);
@@ -127,7 +122,6 @@
         document.getElementById('findResult').textContent = JSON.stringify(labWorks, null, 2);
     }
 
-    // Функция для уменьшения сложности
     async function decreaseDifficulty() {
         const labWorkId = document.getElementById('labWorkId').value;
         const steps = document.getElementById('difficultySteps').value;
@@ -136,7 +130,7 @@
         document.getElementById('decreaseResult').textContent = result;
     }
 
-    // Функция для удаления из дисциплины
+
     async function removeFromDiscipline() {
         const labWorkId = document.getElementById('labWorkDisciplineId').value;
         const response = await fetch(`/labworks/removeFromDiscipline?id=${labWorkId}`, { method: 'DELETE' });

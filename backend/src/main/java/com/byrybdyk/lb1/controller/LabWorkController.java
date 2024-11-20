@@ -151,10 +151,10 @@
             }
         }
 
-        @DeleteMapping("/deleteByAuthor/{author}")
-        public ResponseEntity<String> deleteByAuthor(@PathVariable String author) {
-            labWorkService.deleteByAuthor(author);
-            return ResponseEntity.ok("LabWork with author " + author + " deleted.");
+        @DeleteMapping("/deleteByAuthor/{authorId}")
+        public ResponseEntity<String> deleteByAuthor(@PathVariable Long authorId) {
+            boolean deleted = labWorkService.deleteOneByAuthor(authorId );
+            return ResponseEntity.ok(deleted ? "LabWork deleted successfully." : "No LabWork found with the specified author.");
         }
 
         @GetMapping("/countByAuthor")
@@ -165,8 +165,17 @@
 
         @GetMapping("/findByDescriptionPrefix")
         public ResponseEntity<List<LabWork>> findByDescriptionPrefix(@RequestParam String prefix) {
-            return ResponseEntity.ok(labWorkService.findByDescriptionPrefix(prefix));
+            List<LabWork> labWorks = labWorkService.findByDescriptionPrefix(prefix);
+            return ResponseEntity.ok(labWorks);
         }
+
+//        @PostMapping("/decreaseDifficulty")
+//        public ResponseEntity<String> decreaseDifficulty(
+//                @RequestParam Long id,
+//                @RequestParam int steps) {
+//            boolean updated = labWorkService.decreaseDifficulty(id, steps);
+//            return ResponseEntity.ok(updated ? "Difficulty decreased successfully." : "LabWork not found.");
+//        }
 
         @GetMapping("/home")
         public ResponseEntity<Map<String, Object>> showUserHome(

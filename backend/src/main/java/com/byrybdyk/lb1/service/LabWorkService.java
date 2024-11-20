@@ -201,6 +201,15 @@ public class LabWorkService {
         return labWorkRepository.findByDescriptionStartingWith(prefix);
     }
 
+    public boolean deleteOneByAuthor(Long authorId) {
+        Optional<LabWork> labWork = labWorkRepository.findFirstByAuthorId(authorId);
+        if (labWork.isPresent()) {
+            labWorkRepository.delete(labWork.get());
+            return true;
+        }
+        return false;
+    }
+
 
     @Transactional
     public void decreaseDifficulty(Long labWorkId, int steps) {
@@ -222,6 +231,8 @@ public class LabWorkService {
         labWork.setDiscipline(null);
         labWorkRepository.save(labWork);
     }
+
+
 
     public Page<LabWork> getLabWorksPage(
             Long id, String name, String description, String authorName, String ownerUsername, String creationDate,
@@ -319,5 +330,6 @@ public class LabWorkService {
 
         return labWorkRepository.findAll(spec, pageable);
     }
+
 
 }

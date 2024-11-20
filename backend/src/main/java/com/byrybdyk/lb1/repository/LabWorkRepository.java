@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface LabWorkRepository extends JpaRepository<LabWork, Long>, JpaSpecificationExecutor<LabWork> {
 
@@ -17,4 +18,6 @@ public interface LabWorkRepository extends JpaRepository<LabWork, Long>, JpaSpec
     List<LabWork> findByAuthor(Person author);
 
     void deleteByAuthorName(String author);
+
+    Optional<LabWork> findFirstByAuthorId(Long authorId);
 }
