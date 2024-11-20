@@ -1,6 +1,7 @@
 package com.byrybdyk.lb1.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 
 @Entity
 @Table(name = "coordinates")
@@ -11,9 +12,11 @@ public class Coordinates {
     private long id;
 
     @Column(nullable = false)
+    @Min(value = 0, message = "Значение x должно быть больше или равно 0")
     private float x;
 
     @Column(nullable = false)
+    @Min(value = 0, message = "Значение y должно быть больше или равно 0")
     private int y;
 
     public long getId() {

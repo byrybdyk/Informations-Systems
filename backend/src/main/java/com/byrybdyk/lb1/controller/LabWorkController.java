@@ -4,6 +4,7 @@
     import com.byrybdyk.lb1.model.*;
     import com.byrybdyk.lb1.model.util.LabWorkDeleteMessage;
     import com.byrybdyk.lb1.service.*;
+    import jakarta.validation.Valid;
     import org.springframework.beans.factory.annotation.Autowired;
     import org.springframework.data.domain.Page;
     import org.springframework.data.domain.PageRequest;
@@ -62,7 +63,7 @@
         }
 
         @MessageMapping("/labworks/add")
-        public ResponseEntity<LabWork> createLabWork(@RequestBody LabWorkDTO labWorkDTO) {
+        public ResponseEntity<LabWork> createLabWork(@Valid @RequestBody LabWorkDTO labWorkDTO) {
             try {
                 LabWork createdLabWork = labWorkService.createLabWorkFromDTO(labWorkDTO);
 
@@ -77,7 +78,7 @@
         }
 
         @MessageMapping("/labworks/update")
-        public ResponseEntity<LabWork> updateLabWork(@RequestBody LabWorkDTO labWorkDTO, Principal principal) {
+        public ResponseEntity<LabWork> updateLabWork(@Valid @RequestBody LabWorkDTO labWorkDTO, Principal principal) {
             try {
                 String username = principal.getName();
                 LabWork createdLabWork = labWorkService.updateLabWorkFromDTO(labWorkDTO, username);

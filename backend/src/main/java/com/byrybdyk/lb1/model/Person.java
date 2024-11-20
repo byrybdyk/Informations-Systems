@@ -2,6 +2,7 @@ package com.byrybdyk.lb1.model;
 
 import com.byrybdyk.lb1.model.enums.Color;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 
 @Entity
 @Table(name = "person")
@@ -12,10 +13,13 @@ public class Person {
     private long id;
 
     @Column(nullable = false)
+    @NotNull(message = "Имя не может быть пустым")
+    @NotBlank(message = "Имя не может быть пустым")
     private String name;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "eye_color", nullable = false)
+    @NotNull(message = "Цвет глаз не может быть пустым")
     private Color eyeColor;
 
     @Enumerated(EnumType.STRING)
@@ -24,12 +28,15 @@ public class Person {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "location_id", nullable = false)
+    @NotNull(message = "Местоположение не может быть пустым")
     private Location location;
 
     @Column(nullable = false)
+    @Min(value = 0, message = "Вес должен быть больше 0")
     private double weight;
 
     @Column(name = "passport_id", nullable = false)
+    @NotNull(message = "Номер паспорта не может быть пустым")
     private Integer passportID;
 
     @Column(name = "dtype", nullable = false)

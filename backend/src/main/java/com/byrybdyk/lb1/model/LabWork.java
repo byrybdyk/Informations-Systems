@@ -2,7 +2,7 @@ package com.byrybdyk.lb1.model;
 
 import com.byrybdyk.lb1.model.enums.Difficulty;
 import jakarta.persistence.*;
-import org.antlr.v4.runtime.misc.NotNull;
+import jakarta.validation.constraints.*;
 
 import java.util.Date;
 
@@ -15,17 +15,22 @@ public class LabWork {
     private long id;
 
     @Column(nullable = false)
+    @NotNull(message = "Имя не может быть пустым")
+    @NotBlank(message = "Имя не может быть пустым")
     private String name;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "coordinates_id", nullable = false)
+    @NotNull(message = "Координаты не могут быть пустыми")
     private Coordinates coordinates;
 
     @Column(nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
+    @NotNull(message = "Дата создания не может быть пустой")
     private Date creationDate;
 
     @Column(nullable = true)
+    @NotBlank(message = "Описание не может быть пустым")
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -34,18 +39,24 @@ public class LabWork {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "discipline_id", nullable = false)
+    @NotNull(message = "Дисциплина не может быть пустой")
     private Discipline discipline;
 
     @Column(name = "minimal_point", nullable = false)
+    @NotNull(message = "Минимальный балл не может быть пустым")
+    @Min(value = 1, message = "Минимальный балл должен быть больше 0")
     private Float minimalPoint;
 
     @Column(name = "personal_qualities_minimum", nullable = false)
+    @NotNull(message = "Минимум личных качеств не может быть пустым")
+    @Min(value = 1, message = "Минимум личных качеств должен быть больше 0")
     private double personalQualitiesMinimum;
 
     @Column(name = "personal_qualities_maximum")
+    @Min(value = 1, message = "Максимум личных качеств должен быть больше 0")
     private Float personalQualitiesMaximum;
 
-    @NotNull
+    @NotNull(message = "Автор не может быть пустым")
     @ManyToOne(optional = false)
     @JoinColumn(name = "author_id", nullable = false)
     private Person author;
@@ -53,7 +64,6 @@ public class LabWork {
     @ManyToOne(optional = false)
     @JoinColumn(name = "owner", nullable = false)
     private User owner;
-
 
     @PrePersist
     protected void onCreate() {
