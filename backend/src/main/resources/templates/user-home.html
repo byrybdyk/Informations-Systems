@@ -80,6 +80,7 @@
         let totalPages = 1;
         let currentSortColumn = null;
         let currentSortOrder = 'asc';
+        let currentFilters = {};
 
         function connect() {
             var socket = new SockJS('/ws');
@@ -164,6 +165,12 @@
             if (currentSortColumn) {
                 url += `&sort=${currentSortColumn}&order=${currentSortOrder}`;
             }
+
+            Object.keys(currentFilters).forEach(key => {
+                if (currentFilters[key]) {
+                    url += `&${key}=${encodeURIComponent(currentFilters[key])}`;
+                }
+            });
 
             fetch(url)
                 .then(response => response.json())
@@ -920,6 +927,43 @@
             renderTable(currentPage);
         }
 
+        function applyFilters() {
+            currentFilters = {
+                id: document.getElementById('filterId').value,
+                ownerUsername: document.getElementById('filterOwnerUsername').value,
+                creationDate: document.getElementById('filterCreationDate').value,
+                name: document.getElementById('filterName').value,
+                disciplineName: document.getElementById('filterDisciplineName').value,
+                disciplinePracticeHours: document.getElementById('filterDisciplinePracticeHours').value,
+                description: document.getElementById('filterDescription').value,
+                difficulty: document.getElementById('filterDifficulty').value,
+                coordinatesX: document.getElementById('filterCoordinatesX').value,
+                coordinatesY: document.getElementById('filterCoordinatesY').value,
+                minimalPoint: document.getElementById('filterMinimalPoint').value,
+                personalQualitiesMaximum: document.getElementById('filterPersonalQualitiesMaximum').value,
+                personalQualitiesMinimum: document.getElementById('filterPersonalQualitiesMinimum').value,
+                authorName: document.getElementById('filterAuthorName').value,
+                authorWeight: document.getElementById('filterAuthorWeight').value,
+                authorEyeColor: document.getElementById('filterAuthorEyeColor').value,
+                authorHairColor: document.getElementById('filterAuthorHairColor').value,
+                authorLocationX: document.getElementById('filterAuthorLocationX').value,
+                authorLocationY: document.getElementById('filterAuthorLocationY').value,
+                authorLocationName: document.getElementById('filterAuthorLocationName').value,
+                authorPassportID: document.getElementById('filterAuthorPassportID').value,
+            };
+
+            renderTable(currentPage);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterName').value = "";
+            document.getElementById('filterDescription').value = "";
+            document.getElementById('filterAuthorName').value = "";
+
+            currentFilters = {};
+            renderTable(1);
+        }
+
 
 
     </script>
@@ -1106,6 +1150,32 @@
     </div>
 </div>
 
+<br>
+
+<div>
+    <input type="text" id="filterId" placeholder="Filter by ID" oninput="applyFilters()">
+    <input type="text" id="filterOwnerUsername" placeholder="Filter by Owner Username" oninput="applyFilters()">
+    <input type="text" id="filterCreationDate" placeholder="Filter by Creation Date" oninput="applyFilters()">
+    <input type="text" id="filterName" placeholder="Filter by Name" oninput="applyFilters()">
+    <input type="text" id="filterDisciplineName" placeholder="Filter by Discipline Name" oninput="applyFilters()">
+    <input type="text" id="filterDisciplinePracticeHours" placeholder="Filter by Practice Hours" oninput="applyFilters()">
+    <input type="text" id="filterDescription" placeholder="Filter by Description" oninput="applyFilters()">
+    <input type="text" id="filterDifficulty" placeholder="Filter by Difficulty" oninput="applyFilters()">
+    <input type="text" id="filterCoordinatesX" placeholder="Filter by Coordinates X" oninput="applyFilters()">
+    <input type="text" id="filterCoordinatesY" placeholder="Filter by Coordinates Y" oninput="applyFilters()">
+    <input type="text" id="filterMinimalPoint" placeholder="Filter by Minimal Point" oninput="applyFilters()">
+    <input type="text" id="filterPersonalQualitiesMaximum" placeholder="Filter by Personal Qualities Max" oninput="applyFilters()">
+    <input type="text" id="filterPersonalQualitiesMinimum" placeholder="Filter by Personal Qualities Min" oninput="applyFilters()">
+    <input type="text" id="filterAuthorName" placeholder="Filter by Author Name" oninput="applyFilters()">
+    <input type="text" id="filterAuthorWeight" placeholder="Filter by Author Weight" oninput="applyFilters()">
+    <input type="text" id="filterAuthorEyeColor" placeholder="Filter by Author Eye Color" oninput="applyFilters()">
+    <input type="text" id="filterAuthorHairColor" placeholder="Filter by Author Hair Color" oninput="applyFilters()">
+    <input type="text" id="filterAuthorLocationX" placeholder="Filter by Location X" oninput="applyFilters()">
+    <input type="text" id="filterAuthorLocationY" placeholder="Filter by Location Y" oninput="applyFilters()">
+    <input type="text" id="filterAuthorLocationName" placeholder="Filter by Location Name" oninput="applyFilters()">
+    <input type="text" id="filterAuthorPassportID" placeholder="Filter by Passport ID" oninput="applyFilters()">
+    <button onclick="clearFilters()">Clear Filters</button>
+</div>
 
 
 <h2>LabWork Entities</h2>

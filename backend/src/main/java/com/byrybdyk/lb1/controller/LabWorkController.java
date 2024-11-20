@@ -173,7 +173,28 @@
                 @RequestParam(defaultValue = "1") int page,
                 @RequestParam(defaultValue = "10") int size,
                 @RequestParam(required = false) String sort,
-                @RequestParam(defaultValue = "asc") String order) {
+                @RequestParam(defaultValue = "asc") String order,
+                @RequestParam(required = false) Long id,
+                @RequestParam(required = false) String name,
+                @RequestParam(required = false) String description,
+                @RequestParam(required = false) String authorName,
+                @RequestParam(required = false) String ownerUsername,
+                @RequestParam(required = false) String creationDate,
+                @RequestParam(required = false) String disciplineName,
+                @RequestParam(required = false) Integer disciplinePracticeHours,
+                @RequestParam(required = false) String difficulty,
+                @RequestParam(required = false) Double coordinatesX,
+                @RequestParam(required = false) Double coordinatesY,
+                @RequestParam(required = false) Double minimalPoint,
+                @RequestParam(required = false) Double personalQualitiesMaximum,
+                @RequestParam(required = false) Double personalQualitiesMinimum,
+                @RequestParam(required = false) Double authorWeight,
+                @RequestParam(required = false) String authorEyeColor,
+                @RequestParam(required = false) String authorHairColor,
+                @RequestParam(required = false) Double authorLocationX,
+                @RequestParam(required = false) Double authorLocationY,
+                @RequestParam(required = false) String authorLocationName,
+                @RequestParam(required = false) Integer authorPassportID) {
 
             Sort sorting = Sort.unsorted();
             if (sort != null) {
@@ -182,7 +203,11 @@
 
             Pageable pageable = PageRequest.of(page - 1, size, sorting);
 
-            Page<LabWork> labWorksPage = labWorkService.getLabWorksPage(pageable);
+            Page<LabWork> labWorksPage = labWorkService.getLabWorksPage(id,
+                    name, description, authorName, ownerUsername, creationDate, disciplineName, disciplinePracticeHours,
+                    difficulty, coordinatesX, coordinatesY, minimalPoint, personalQualitiesMaximum, personalQualitiesMinimum,
+                    authorWeight, authorEyeColor, authorHairColor, authorLocationX, authorLocationY, authorLocationName,
+                    authorPassportID, pageable);
 
             Map<String, Object> response = new HashMap<>();
             response.put("labWorks", labWorksPage.getContent());

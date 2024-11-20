@@ -8,9 +8,11 @@ import com.byrybdyk.lb1.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -221,7 +223,101 @@ public class LabWorkService {
         labWorkRepository.save(labWork);
     }
 
-    public Page<LabWork> getLabWorksPage(Pageable pageable) {
-        return labWorkRepository.findAll(pageable);
+    public Page<LabWork> getLabWorksPage(
+            Long id, String name, String description, String authorName, String ownerUsername, String creationDate,
+            String disciplineName, Integer disciplinePracticeHours, String difficulty, Double coordinatesX,
+            Double coordinatesY, Double minimalPoint, Double personalQualitiesMaximum, Double personalQualitiesMinimum,
+            Double authorWeight, String authorEyeColor, String authorHairColor, Double authorLocationX,
+            Double authorLocationY, String authorLocationName, Integer authorPassportID, Pageable pageable) {
+
+        Specification<LabWork> spec = Specification.where(null);
+
+        if (id != null) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("id"), id));
+        }
+        if (name != null && !name.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
+        }
+        if (description != null && !description.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), "%" + description.toLowerCase() + "%"));
+        }
+        if (authorName != null && !authorName.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("author").get("name")), "%" + authorName.toLowerCase() + "%"));
+        }
+        if (ownerUsername != null && !ownerUsername.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("owner").get("username")), "%" + ownerUsername.toLowerCase() + "%"));
+        }
+        if (creationDate != null && !creationDate.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("creationDate"), LocalDate.parse(creationDate)));
+        }
+        if (disciplineName != null && !disciplineName.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("discipline").get("name")), "%" + disciplineName.toLowerCase() + "%"));
+        }
+        if (disciplinePracticeHours != null) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("discipline").get("practiceHours"), disciplinePracticeHours));
+        }
+        if (difficulty != null && !difficulty.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("difficulty")), "%" + difficulty.toLowerCase() + "%"));
+        }
+        if (coordinatesX != null) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("coordinates").get("x"), coordinatesX));
+        }
+        if (coordinatesY != null) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("coordinates").get("y"), coordinatesY));
+        }
+        if (minimalPoint != null) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("minimalPoint"), minimalPoint));
+        }
+        if (personalQualitiesMaximum != null) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("personalQualitiesMaximum"), personalQualitiesMaximum));
+        }
+        if (personalQualitiesMinimum != null) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("personalQualitiesMinimum"), personalQualitiesMinimum));
+        }
+        if (authorWeight != null) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("author").get("weight"), authorWeight));
+        }
+        if (authorEyeColor != null && !authorEyeColor.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("author").get("eyeColor")), "%" + authorEyeColor.toLowerCase() + "%"));
+        }
+        if (authorHairColor != null && !authorHairColor.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("author").get("hairColor")), "%" + authorHairColor.toLowerCase() + "%"));
+        }
+        if (authorLocationX != null) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("author").get("location").get("x"), authorLocationX));
+        }
+        if (authorLocationY != null) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("author").get("location").get("y"), authorLocationY));
+        }
+        if (authorLocationName != null && !authorLocationName.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("author").get("location").get("name")), "%" + authorLocationName.toLowerCase() + "%"));
+        }
+        if (authorPassportID != null ) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("author").get("passportID"), authorPassportID));
+        }
+
+        return labWorkRepository.findAll(spec, pageable);
     }
+
 }
