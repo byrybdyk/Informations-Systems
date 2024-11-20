@@ -19,7 +19,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -37,7 +41,7 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, ClientRegistrationRepository clientRegistrationRepository) throws Exception {
         http
                 .cors().disable()
                 .csrf().disable()
@@ -49,24 +53,24 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
                 .requestMatchers("/ws/**").authenticated()
                 .anyRequest().authenticated()
                 .and()
-                .formLogin()
+                .oauth2Login()
                 .loginPage("/login")
-                .successHandler((request, response, authentication) -> {
-                    String redirectUrl = authentication.getAuthorities().stream()
-                            .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"))
-                            ? "/admin/home" : "/user/home";
-                    response.sendRedirect(redirectUrl);
-                })
-                .permitAll()
+                .defaultSuccessUrl("/user/home", true)
                 .and()
                 .logout()
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login?logout")
-                .permitAll()
+                .logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegistrationRepository))
                 .and()
                 .headers().frameOptions().sameOrigin();
 
         return http.build();
+    }
+
+    @Bean
+    public LogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegistrationRepository) {
+        OidcClientInitiatedLogoutSuccessHandler successHandler =
+                new OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository);
+        successHandler.setPostLogoutRedirectUri("{baseUrl}/login");
+        return successHandler;
     }
 
     @Bean
