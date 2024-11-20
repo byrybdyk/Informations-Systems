@@ -64,9 +64,9 @@
 
     <div class="operation">
         <h3>Count LabWorks with Author Less Than Given</h3>
-        <label for="countAuthor">Author Name:</label>
+        <label for="countAuthor">Author weight</label>
         <input type="text" id="countAuthor" placeholder="Enter author name">
-        <button onclick="countByAuthor()">Count</button>
+        <button onclick="countByAuthorLessThenWeight()">Count</button>
         <div id="countResult" class="result"></div>
     </div>
 
@@ -88,14 +88,6 @@
         <div id="decreaseResult" class="result"></div>
     </div>
 
-    <div class="operation">
-        <h3>Remove LabWork from Discipline</h3>
-        <label for="labWorkDisciplineId">LabWork ID:</label>
-        <input type="number" id="labWorkDisciplineId" placeholder="Enter LabWork ID">
-        <button onclick="removeFromDiscipline()">Remove</button>
-        <div id="removeResult" class="result"></div>
-    </div>
-
     <a href="/admin/home">Back to home</a>
 
 </div>
@@ -108,35 +100,42 @@
         document.getElementById('deleteResult').textContent = result;
     }
 
-    async function countByAuthor() {
-        const author = document.getElementById('countAuthor').value;
-        const response = await fetch(`/labworks/countByAuthor?author=${author}`);
-        const count = await response.json();
-        document.getElementById('countResult').textContent = `Count: ${count}`;
-    }
+    async function countByAuthorLessThenWeight() {
+        const weight = document.getElementById('countAuthor').value;
+        const response = await fetch(`/labworks/countByAuthorLessThenWeight/${weight}`, { method: 'GET' });
 
-    async function findByDescriptionPrefix() {
-        const prefix = document.getElementById('descriptionPrefix').value;
-        const response = await fetch(`/labworks/findByDescriptionPrefix?prefix=${prefix}`);
-        const labWorks = await response.json();
-        document.getElementById('findResult').textContent = JSON.stringify(labWorks, null, 2);
+        if (response.ok) {
+            const result = await response.text();
+            document.getElementById('countResult').textContent = result;
+        } else {
+            document.getElementById('countResult').textContent = "Error: " + response.statusText;
+        }
     }
 
     async function decreaseDifficulty() {
         const labWorkId = document.getElementById('labWorkId').value;
         const steps = document.getElementById('difficultySteps').value;
-        const response = await fetch(`/labworks/decreaseDifficulty?id=${labWorkId}&steps=${steps}`, { method: 'POST' });
-        const result = await response.text();
-        document.getElementById('decreaseResult').textContent = result;
+        const response = await fetch(`/labworks/decreaseDifficulty/${labWorkId}/${steps}`, { method: 'POST' });
+        if (response.ok) {
+            const result = await response.text();
+            document.getElementById('decreaseResult').textContent = result;
+        } else {
+            document.getElementById('decreaseResult').textContent = "Error: " + response.statusText;
+        }
     }
 
+    async function findByDescriptionPrefix() {
+        const prefix = document.getElementById('descriptionPrefix').value;
+        const response = await fetch(`/labworks/findByDescriptionPrefix/${prefix}`, { method: 'GET' });
 
-    async function removeFromDiscipline() {
-        const labWorkId = document.getElementById('labWorkDisciplineId').value;
-        const response = await fetch(`/labworks/removeFromDiscipline?id=${labWorkId}`, { method: 'DELETE' });
-        const result = await response.text();
-        document.getElementById('removeResult').textContent = result;
+        if (response.ok) {
+            const result = await response.text();
+            document.getElementById('findResult').textContent = result;
+        } else {
+            document.getElementById('findResult').textContent = "Error: " + response.statusText;
+        }
     }
+
 </script>
 
 </body>

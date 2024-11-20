@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface PersonRepository extends JpaRepository<Person, Long> {
     Optional<Person> findByName(String authorName);
+
+    long countByWeightLessThan(Double weight);
 }

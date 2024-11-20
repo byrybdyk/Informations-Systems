@@ -66,4 +66,8 @@ public class PersonService {
     public List<Person> findAll() {
         return personRepository.findAll();
     }
+
+    public long countByAuthorLessThan(Double weight) {
+        return personRepository.countByWeightLessThan(weight);
+    }
 }

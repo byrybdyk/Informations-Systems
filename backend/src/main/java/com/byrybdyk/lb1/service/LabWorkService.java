@@ -192,9 +192,7 @@ public class LabWorkService {
     }
 
 
-    public long countByAuthorLessThan(String authorName) {
-        return labWorkRepository.countByAuthorNameLessThan(authorName);
-    }
+
 
 
     public List<LabWork> findByDescriptionPrefix(String prefix) {
@@ -214,13 +212,21 @@ public class LabWorkService {
     @Transactional
     public void decreaseDifficulty(Long labWorkId, int steps) {
         LabWork labWork = labWorkRepository.findById(labWorkId)
-                .orElseThrow(() -> new IllegalArgumentException("LabWork not found with id: " + labWorkId));
+                .orElseThrow(() -> new RuntimeException("LabWork not found"));
 
-        int newDifficultyLevel = Math.max(labWork.getDifficulty().ordinal() - steps, 0);
-        labWork.setDifficulty(Difficulty.values()[newDifficultyLevel]);
+        Difficulty currentDifficulty = labWork.getDifficulty();
+
+        int newDifficultyValue = currentDifficulty.getValue() - steps;
+
+        if (newDifficultyValue <= Difficulty.VERY_EASY.getValue()) {
+            labWork.setDifficulty(Difficulty.VERY_EASY);
+        } else {
+            labWork.setDifficulty(Difficulty.fromValue(newDifficultyValue));
+        }
 
         labWorkRepository.save(labWork);
     }
+
 
 
     @Transactional

@@ -157,25 +157,29 @@
             return ResponseEntity.ok(deleted ? "LabWork deleted successfully." : "No LabWork found with the specified author.");
         }
 
-        @GetMapping("/countByAuthor")
-        public ResponseEntity<Long> countByAuthor(@RequestParam String author) {
-            long count = labWorkService.countByAuthorLessThan(author);
-            return ResponseEntity.ok(count);
+        @GetMapping("/countByAuthorLessThenWeight/{weight}")
+        public ResponseEntity<String> countByAuthor(@PathVariable Double weight) {
+            long count = personService.countByAuthorLessThan(weight);
+            return ResponseEntity.ok("Count of LabWorks with author weight less than " + weight + ": " + count);
         }
 
-        @GetMapping("/findByDescriptionPrefix")
-        public ResponseEntity<List<LabWork>> findByDescriptionPrefix(@RequestParam String prefix) {
+        @GetMapping("/findByDescriptionPrefix/{prefix}")
+        public ResponseEntity<List<LabWork>> findByDescriptionPrefix(@PathVariable String prefix) {
             List<LabWork> labWorks = labWorkService.findByDescriptionPrefix(prefix);
             return ResponseEntity.ok(labWorks);
         }
 
-//        @PostMapping("/decreaseDifficulty")
-//        public ResponseEntity<String> decreaseDifficulty(
-//                @RequestParam Long id,
-//                @RequestParam int steps) {
-//            boolean updated = labWorkService.decreaseDifficulty(id, steps);
-//            return ResponseEntity.ok(updated ? "Difficulty decreased successfully." : "LabWork not found.");
-//        }
+        @PostMapping("/decreaseDifficulty/{labWorkId}/{steps}")
+        public ResponseEntity<String> decreaseDifficulty(
+                @PathVariable Long labWorkId,
+                @PathVariable int steps){
+
+            try {
+                labWorkService.decreaseDifficulty(labWorkId, steps);
+                return ResponseEntity.ok("LabWork difficulty decreased successfully.");
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+            }}
 
         @GetMapping("/home")
         public ResponseEntity<Map<String, Object>> showUserHome(

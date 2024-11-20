@@ -294,7 +294,7 @@
             }
             removeRequiredIfHidden();
             const formData = new FormData(document.getElementById('labWorkForm'));
-
+            const owner = document.getElementById('ownerField').value;
             const labWorkDTO = {
                 id: labWorkId,
                 name: formData.get('name'),
@@ -328,7 +328,7 @@
                     hairColor: formData.get('newAuthorHairColor'),
                     passportID: formData.get('passportID')
                 },
-                ownerName: document.getElementById("userName").textContent
+                ownerName: owner
             };
 
             stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));
@@ -408,52 +408,6 @@
                 console.error('Error fetching lab work data:', error);
                 alert("Error loading data for lab work");
             }
-        }
-
-
-
-
-        async function updateLabWork(event, labWorkId) {
-            event.preventDefault();
-
-            const formData = new FormData(document.getElementById('editLabWorkForm'));
-            const data = Object.fromEntries(formData.entries());
-
-            const labWorkDTO = {
-                id: labWorkId,
-                name: data.name,
-                description: data.description,
-                difficulty: data.difficulty,
-                coordinates: data.coordinatesId ?
-                    { id: data.coordinatesId } :
-                    { x: parseFloat(data.coordinatesX), y: parseFloat(data.coordinatesY) },
-                discipline: {
-                    name: data.disciplineName,
-                    practiceHours: parseInt(data.practiceHours),
-                },
-                author: data.authorId ?
-                    { id: data.authorId } :
-                    {
-                        name: data.authorName,
-                        weight: parseFloat(data.authorWeight),
-                        eyeColor: data.authorEyeColor,
-                        hairColor: data.authorHairColor,
-                        passportID: data.passportID,
-                        location: {
-                            x: parseFloat(data.locationX),
-                            y: parseFloat(data.locationY),
-                            name: data.locationName,
-                        },
-                    },
-                minimalPoint: parseFloat(data.minimalPoint),
-                personalQualitiesMinimum: parseFloat(data.personalQualitiesMinimum),
-                personalQualitiesMaximum: parseFloat(data.personalQualitiesMaximum),
-                ownerName: data.ownerName
-            };
-
-            stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));
-
-            closeModal();
         }
 
         function toggleCreateCoordinates() {
@@ -779,6 +733,7 @@
                             document.getElementById("minimalPoint").value = labWork.minimalPoint || "";
                             document.getElementById("personalQualitiesMinimum").value = labWork.personalQualitiesMinimum || "";
                             document.getElementById("personalQualitiesMaximum").value = labWork.personalQualitiesMaximum || "";
+                            document.getElementById("ownerField").value = labWork.owner.username || "";
                         } else {
                             console.error('Permission denied to edit this lab work');
                             Swal.fire({
@@ -1143,6 +1098,7 @@
                             placeholder="New Location Name"
                     >
                 </div>
+                <input type="hidden" id="ownerField" name="ownerField">
             </div>
 
             <button type="submit" id="submitButton" name="action" value="add">Add Lab Work</button>
