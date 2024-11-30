@@ -92,51 +92,6 @@
 
 </div>
 
-<script>
-    async function deleteByAuthor() {
-        const author = document.getElementById('deleteAuthor').value;
-        const response = await fetch(`/labworks/deleteByAuthor/${author}`, { method: 'DELETE' });
-        const result = await response.text();
-        document.getElementById('deleteResult').textContent = result;
-    }
-
-    async function countByAuthorLessThenWeight() {
-        const weight = document.getElementById('countAuthor').value;
-        const response = await fetch(`/labworks/countByAuthorLessThenWeight/${weight}`, { method: 'GET' });
-
-        if (response.ok) {
-            const result = await response.text();
-            document.getElementById('countResult').textContent = result;
-        } else {
-            document.getElementById('countResult').textContent = "Error: " + response.statusText;
-        }
-    }
-
-    async function decreaseDifficulty() {
-        const labWorkId = document.getElementById('labWorkId').value;
-        const steps = document.getElementById('difficultySteps').value;
-        const response = await fetch(`/labworks/decreaseDifficulty/${labWorkId}/${steps}`, { method: 'POST' });
-        if (response.ok) {
-            const result = await response.text();
-            document.getElementById('decreaseResult').textContent = result;
-        } else {
-            document.getElementById('decreaseResult').textContent = "Error: " + response.statusText;
-        }
-    }
-
-    async function findByDescriptionPrefix() {
-        const prefix = document.getElementById('descriptionPrefix').value;
-        const response = await fetch(`/labworks/findByDescriptionPrefix/${prefix}`, { method: 'GET' });
-
-        if (response.ok) {
-            const result = await response.text();
-            document.getElementById('findResult').textContent = result;
-        } else {
-            document.getElementById('findResult').textContent = "Error: " + response.statusText;
-        }
-    }
-
-</script>
-
+<script src="/js/scripts.js"></script>
 </body>
 </html>
