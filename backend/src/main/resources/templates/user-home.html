@@ -6,7 +6,9 @@
     <title>User Home</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 
@@ -16,18 +18,22 @@
             max-height: 400px;
             overflow: auto;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
+
         th, td {
             padding: 8px;
             text-align: left;
             border: 1px solid #ddd;
         }
+
         th {
             background-color: #f2f2f2;
         }
+
         .modal {
             display: none;
             position: fixed;
@@ -41,6 +47,7 @@
             background-color: rgba(0,0,0,0.4);
             padding-top: 60px;
         }
+
         .modal-content {
             background-color: #fefefe;
             margin: 5% auto;
@@ -48,12 +55,14 @@
             border: 1px solid #888;
             width: 80%;
         }
+
         .close {
             color: #aaa;
             float: right;
             font-size: 28px;
             font-weight: bold;
         }
+
         .close:hover,
         .close:focus {
             color: black;
@@ -94,6 +103,8 @@
                 console.error('WebSocket connection failed: ' + error);
             });
         }
+
+
 
         function onLabWorkUpdate(labWork) {
             console.log('LabWork updated:', labWork);
@@ -325,6 +336,79 @@
             closeModal();
         }
 
+        async function openEditModal(labWorkId) {
+            document.getElementById('editModal').style.display = 'block';
+
+            try {
+                const response = await fetch(`/labworks/${labWorkId}`);
+                const labWork = await response.json();
+
+                if (!labWork) {
+                    console.error('Lab work data not found');
+                    return;
+                }
+
+                const labWorkIdInput = document.getElementById('editLabWorkId');
+                if (labWorkIdInput) {
+                    labWorkIdInput.value = labWork.id;
+                    labWorkIdInput.setAttribute('data-id', labWork.id);
+                }
+
+                document.getElementById('editLabWorkName').value = labWork.name || '';
+                document.getElementById('editLabWorkDescription').value = labWork.description || '';
+                document.getElementById('editLabWorkDifficulty').value = labWork.difficulty || '';
+                document.getElementById('editLabWorkMinimalPoint').value = labWork.minimalPoint || '';
+                document.getElementById('editLabWorkPersonalQualitiesMax').value = labWork.personalQualitiesMaximum || '';
+                document.getElementById('editLabWorkPersonalQualitiesMin').value = labWork.personalQualitiesMinimum || '';
+
+                if (labWork.coordinates) {
+                    document.getElementById('editLabWorkCoordinatesX').value = labWork.coordinates.x || '';
+                    document.getElementById('editLabWorkCoordinatesY').value = labWork.coordinates.y || '';
+                }
+
+                if (labWork.author) {
+                    document.getElementById('editLabWorkPassportID').value = labWork.author.passportID || '';
+                }
+
+                const formDataResponse = await fetch('/labworks/form-data');
+                const data = await formDataResponse.json();
+
+                if (data && data.disciplines) {
+                    populateSelectEditOptions('editLabWorkDisciplineId', data.disciplines, 'name', labWork.discipline ? labWork.discipline.id : null);
+                }
+
+                if (data && data.coordinates) {
+                    populateSelectEditOptions('editLabWorkCoordinatesId', data.coordinates, coord => `X: ${coord.x}, Y: ${coord.y}`, labWork.coordinates ? labWork.coordinates.id : null);
+                }
+
+                if (data && data.authors) {
+                    populateSelectEditOptions('editLabWorkAuthorId', data.authors, 'name', labWork.author ? labWork.author.id : null);
+                }
+
+                if (data && data.locations) {
+                    populateSelectEditOptions('editLabWorkLocationId', data.locations, 'name', labWork.author && labWork.author.location ? labWork.author.location.id : null);
+                }
+
+                if (labWork.author) {
+                    document.getElementById('editLabWorkAuthorName').value = labWork.author.name || '';
+                    document.getElementById('editLabWorkAuthorWeight').value = labWork.author.weight || '';
+                    document.getElementById('editLabWorkAuthorEyeColor').value = labWork.author.eyeColor || '';
+                    document.getElementById('editLabWorkAuthorHairColor').value = labWork.author.hairColor || '';
+
+                    if (labWork.author.location) {
+                        document.getElementById('editLabWorkLocationX').value = labWork.author.location.x || '';
+                        document.getElementById('editLabWorkLocationY').value = labWork.author.location.y || '';
+                        document.getElementById('editLabWorkLocationName').value = labWork.author.location.name || '';
+                    }
+
+                    document.getElementById('editLabWorkPassportID').value = labWork.author.passportID || '';
+                }
+
+            } catch (error) {
+                console.error('Error fetching lab work data:', error);
+                alert("Error loading data for lab work");
+            }
+        }
 
         function toggleCreateCoordinates() {
             const fields = document.getElementById("newCoordinatesFields");
@@ -545,6 +629,31 @@
                 ("00" + date.getUTCMilliseconds()).slice(-3);
         }
 
+
+        function populateSelectEditOptions(elementId, options, labelKey, selectedValue) {
+            const selectElement = document.getElementById(elementId);
+            if (!selectElement || !options) return;
+
+            selectElement.innerHTML = '';
+
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Please select';
+            selectElement.appendChild(defaultOption);
+
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.id;
+                optionElement.textContent = option[labelKey] || option.name;
+
+                if (option.id === selectedValue) {
+                    optionElement.selected = true;
+                }
+
+                selectElement.appendChild(optionElement);
+            });
+        }
+
         function populateSelectOptions(selectId, items, selectedId) {
             const selectElement = document.querySelector(`[name=${selectId}]`);
             selectElement.innerHTML = '<option value="">-- Select --</option>';
@@ -600,24 +709,59 @@
             const submitButton = document.getElementById("submitButton");
 
             if (labWork) {
+                try {
                     const currentUserName = document.getElementById("userName").textContent;
-                    if (canEdit(labWorkId)) {
-                        document.getElementById("modalTitle").textContent = "Edit Lab Work";
-                        submitButton.textContent = "Update Lab Work";
-                        submitButton.setAttribute("value", "update");
 
-                        document.getElementById("labWorkId").value = labWork.id || "";
-                        document.getElementById("labWorkName").value = labWork.name || "";
-                        document.getElementById("labWorkDescription").value = labWork.description || "";
-                        document.getElementById("labWorkDifficulty").value = labWork.difficulty || "";
-                        document.getElementById("minimalPoint").value = labWork.minimalPoint || "";
-                        document.getElementById("personalQualitiesMinimum").value = labWork.personalQualitiesMinimum || "";
-                        document.getElementById("personalQualitiesMaximum").value = labWork.personalQualitiesMaximum || "";
-                        document.getElementById("ownerField").value = labWork.owner.username || "";
+                    const response = await fetch(`/labworks/${labWorkId}/can-edit`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+                    if (response.ok) {
+                        const canEdit = await response.json();
+                        if (canEdit) {
+                            document.getElementById("modalTitle").textContent = "Edit Lab Work";
+                            submitButton.textContent = "Update Lab Work";
+                            submitButton.setAttribute("value", "update");
+
+                            document.getElementById("labWorkId").value = labWork.id || "";
+                            document.getElementById("labWorkName").value = labWork.name || "";
+                            document.getElementById("labWorkDescription").value = labWork.description || "";
+                            document.getElementById("labWorkDifficulty").value = labWork.difficulty || "";
+                            document.getElementById("minimalPoint").value = labWork.minimalPoint || "";
+                            document.getElementById("personalQualitiesMinimum").value = labWork.personalQualitiesMinimum || "";
+                            document.getElementById("personalQualitiesMaximum").value = labWork.personalQualitiesMaximum || "";
+                            document.getElementById("ownerField").value = labWork.owner.username || "";
+                        } else {
+                            console.error('Permission denied to edit this lab work');
+                            Swal.fire({
+                                title: "Permission Denied",
+                                icon: "error",
+                                text: "You can only edit your own lab works.",
+                                confirmButtonText: "OK",
+                            });
+                        }
+                    } else {
+                        console.error('Permission denied to edit this lab work');
+                        Swal.fire({
+                            title: "Permission Denied",
+                            icon: "error",
+                            text: "You can only edit your own lab works.",
+                            confirmButtonText: "OK",
+                        });
+                        return;
                     }
-                    else {
-                        closeModal()
-                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        title: "Error",
+                        icon: "error",
+                        text: "An error occurred while trying to edit the Lab Work.",
+                        confirmButtonText: "OK",
+                    });
+                }
             } else {
                 document.getElementById("modalTitle").textContent = "Add Lab Work";
                 submitButton.textContent = "Add Lab Work";
@@ -627,6 +771,7 @@
             fetch('/labworks/form-data')
                 .then(response => response.json())
                 .then(data => {
+                    // Заполняем выпадающие списки
                     populateSelectOptions('disciplineId', data.disciplines, 'name');
                     populateSelectOptions('coordinatesId', data.coordinates, coord => `X: ${coord.x}, Y: ${coord.y}`);
                     populateSelectOptions('authorId', data.authors, 'name');
@@ -646,6 +791,7 @@
             document.getElementById("labWorkModal").style.display = "block";
         }
 
+
         async function handleSubmit(event, labWorkId) {
             event.preventDefault();
 
@@ -655,7 +801,9 @@
             const form = document.getElementById('labWorkForm');
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
+
             const action = document.getElementById("submitButton").value;
+
 
             if ((action === 'update' && labWorkId)) {
                 editLabWork(event, labWorkId);
@@ -672,39 +820,56 @@
             resetForm();
         }
 
-        async function canEdit(labWorkId) {
+        async function confirmDeleteLabWork(labWorkId) {
+            try {
+                const currentUserName = document.getElementById("userName").textContent;
 
-            const response = await fetch(`/labworks/${labWorkId}/can-edit`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-            const canDelete = await response.json();
-            if (canDelete){
-                return true;
+                const response = await fetch(`/labworks/${labWorkId}/can-edit`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    const canDelete = await response.json();
+                    if (canDelete) {
+
+                        stompClient.send('/app/labworks/delete', {}, JSON.stringify({
+                            labWorkId: labWorkId
+                        }));
+
+                    } else {
+                        console.error('Permission denied to edit this lab work');
+                        Swal.fire({
+                            title: "Permission Denied",
+                            icon: "error",
+                            text: "You can only edit your own lab works.",
+                            confirmButtonText: "OK",
+                        });
+                    }
+                }else {
+                    console.error('Permission denied to edit this lab work');
+                    Swal.fire({
+                        title: "Permission Denied",
+                        icon: "error",
+                        text: "You can only edit your own lab works.",
+                        confirmButtonText: "OK",
+                    });
+                }
             }
-            else {
-                closeModal()
-                console.error('Permission denied to edit this lab work');
+            catch (error){
+                console.error('Error:', error);
                 Swal.fire({
-                    title: "Permission Denied",
+                    title: "Error",
                     icon: "error",
-                    text: "You can only edit your own lab works.",
+                    text: "An error occurred while trying to edit the Lab Work.",
                     confirmButtonText: "OK",
                 });
             }
-                return false;
         }
 
 
-        async function confirmDeleteLabWork(labWorkId) {
-            alert(canEdit(labWorkId));
-            if (canEdit(labWorkId)) {
-                stompClient.send('/app/labworks/delete', {}, JSON.stringify({
-                    labWorkId: labWorkId}));
-            }
-        }
 
         function applySorting(column) {
             if (currentSortColumn === column) {
@@ -713,6 +878,7 @@
                 currentSortColumn = column;
                 currentSortOrder = 'asc';
             }
+
             renderTable(currentPage);
         }
 
@@ -752,7 +918,11 @@
             currentFilters = {};
             renderTable(1);
         }
+
+
+
     </script>
+
 </head>
 
 <body>
