@@ -4,13 +4,6 @@ import com.byrybdyk.lb1.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.simp.config.ChannelRegistration;
-import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
-import org.springframework.messaging.support.ChannelInterceptor;
-import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,11 +12,22 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.config.ChannelRegistration;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -41,10 +45,23 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, ClientRegistrationRepository clientRegistrationRepository) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors().disable()
                 .csrf().disable()
+                .oauth2Login()
+                .clientRegistrationRepository(clientRegistrationRepository())
+                .and()
+                .formLogin()
+                .loginPage("/login")
+                .successHandler((request, response, authentication) -> {
+                    String redirectUrl = authentication.getAuthorities().stream()
+                            .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"))
+                            ? "/admin/home" : "/user/home";
+                    response.sendRedirect(redirectUrl);
+                })
+                .permitAll()
+                .and()
                 .authorizeRequests()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
@@ -53,12 +70,15 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
                 .requestMatchers("/ws/**").authenticated()
                 .anyRequest().authenticated()
                 .and()
-                .oauth2Login()
-                .loginPage("/login")
-                .defaultSuccessUrl("/user/home", true)
-                .and()
                 .logout()
-                .logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegistrationRepository))
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login?logout")
+                .permitAll()
+                .and()
+                .exceptionHandling()
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.sendRedirect("/login?logout");
+                })
                 .and()
                 .headers().frameOptions().sameOrigin();
 
@@ -66,11 +86,28 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     @Bean
-    public LogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegistrationRepository) {
-        OidcClientInitiatedLogoutSuccessHandler successHandler =
-                new OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository);
-        successHandler.setPostLogoutRedirectUri("{baseUrl}/login");
-        return successHandler;
+    public ClientRegistrationRepository clientRegistrationRepository() {
+        return new InMemoryClientRegistrationRepository(
+                ClientRegistration.withRegistrationId("keycloak")
+                        .clientId("IS-client")
+                        .authorizationUri("https://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/auth")
+                        .tokenUri("https://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/token")
+                        .userInfoUri("https://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/userinfo")
+                        .redirectUri("http://localhost:8080/login/oauth2/code/keycloak")
+                        .scope("openid", "profile")
+                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                        .build()
+        );
+    }
+
+    private OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> accessTokenResponseClient() {
+        DefaultAuthorizationCodeTokenResponseClient client = new DefaultAuthorizationCodeTokenResponseClient();
+        client.setRestOperations(restOperations());
+        return client;
+    }
+
+    private RestTemplate restOperations() {
+        return new RestTemplate();
     }
 
     @Bean

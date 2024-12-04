@@ -24,13 +24,17 @@ dependencies {
 	implementation("org.postgresql:postgresql")
 	implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
-	implementation ("org.springframework.boot:spring-boot-starter-websocket")
+	implementation("org.springframework.boot:spring-boot-starter-websocket")
+
 	implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
-	implementation("org.springframework.security:spring-security-oauth2-client")
+	implementation("org.keycloak:keycloak-spring-boot-starter:25.0.3")
+	implementation("org.springframework.security:spring-security-oauth2-jose")
+
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
 
 tasks.withType<Test> {
 	useJUnitPlatform()
