@@ -49,18 +49,15 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
         http
                 .cors().disable()
                 .csrf().disable()
-                .oauth2Login()
+                .oauth2Login()  // Используем OAuth2 для логина
                 .clientRegistrationRepository(clientRegistrationRepository())
-                .and()
-                .formLogin()
-                .loginPage("/login")
                 .successHandler((request, response, authentication) -> {
                     String redirectUrl = authentication.getAuthorities().stream()
                             .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"))
                             ? "/admin/home" : "/user/home";
-                    response.sendRedirect(redirectUrl);
+                    response.sendRedirect(redirectUrl); // Перенаправление после логина
                 })
-                .permitAll()
+                .permitAll() // Разрешить доступ на страницу /login
                 .and()
                 .authorizeRequests()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
@@ -68,6 +65,7 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
                 .requestMatchers("/labworks/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/auth/register", "/auth/login", "/register", "/login").permitAll()
                 .requestMatchers("/ws/**").authenticated()
+                .requestMatchers("/favicon.ico").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .logout()
@@ -75,30 +73,29 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
                 .logoutSuccessUrl("/login?logout")
                 .permitAll()
                 .and()
-                .exceptionHandling()
-                .authenticationEntryPoint((request, response, authException) -> {
-                    response.sendRedirect("/login?logout");
-                })
-                .and()
                 .headers().frameOptions().sameOrigin();
 
         return http.build();
     }
+
+
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository() {
         return new InMemoryClientRegistrationRepository(
                 ClientRegistration.withRegistrationId("keycloak")
                         .clientId("IS-client")
-                        .authorizationUri("https://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/auth")
-                        .tokenUri("https://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/token")
-                        .userInfoUri("https://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/userinfo")
-                        .redirectUri("http://localhost:8080/login/oauth2/code/keycloak")
+                        .authorizationUri("http://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/auth")
+                        .tokenUri("http://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/token")
+                        .userInfoUri("http://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/userinfo")
+                        .redirectUri("http://localhost:8080/login/oauth2/code/keycloak") // Убедитесь, что это правильный редирект URI
                         .scope("openid", "profile")
                         .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                         .build()
         );
     }
+
+
 
     private OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> accessTokenResponseClient() {
         DefaultAuthorizationCodeTokenResponseClient client = new DefaultAuthorizationCodeTokenResponseClient();
