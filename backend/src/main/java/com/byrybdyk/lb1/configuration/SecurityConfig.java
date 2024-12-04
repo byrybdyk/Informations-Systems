@@ -12,6 +12,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
@@ -49,62 +51,59 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
         http
                 .cors().disable()
                 .csrf().disable()
-                .oauth2Login()  // Используем OAuth2 для логина
-                .clientRegistrationRepository(clientRegistrationRepository())
-                .successHandler((request, response, authentication) -> {
-                    String redirectUrl = authentication.getAuthorities().stream()
-                            .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"))
-                            ? "/admin/home" : "/user/home";
-                    response.sendRedirect(redirectUrl); // Перенаправление после логина
-                })
-                .permitAll() // Разрешить доступ на страницу /login
-                .and()
-                .authorizeRequests()
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/labworks/**").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/auth/register", "/auth/login", "/register", "/login").permitAll()
-                .requestMatchers("/ws/**").authenticated()
-                .requestMatchers("/favicon.ico").permitAll()
-                .anyRequest().authenticated()
-                .and()
-                .logout()
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login?logout")
-                .permitAll()
-                .and()
-                .headers().frameOptions().sameOrigin();
+                .oauth2Login(oauth2 -> oauth2
+                        .clientRegistrationRepository(clientRegistrationRepository())
+                        .authorizedClientService(authorizedClientService())
+                        .successHandler((request, response, authentication) -> {
+                            String redirectUrl = authentication.getAuthorities().stream()
+                                    .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"))
+                                    ? "/admin/home" : "/user/home";
+                            response.sendRedirect(redirectUrl);
+                        })
+                )
+                .authorizeRequests(authz -> authz
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/labworks/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/auth/register", "/auth/login", "/register", "/login").permitAll()
+                        .requestMatchers("/ws/**").authenticated()
+                        .requestMatchers("/favicon.ico").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout")
+                        .permitAll()
+                )
+                .headers(headers -> headers.frameOptions().sameOrigin());
 
         return http.build();
+    }
+
+    @Bean
+    public ClientRegistrationRepository clientRegistrationRepository() {
+        return new InMemoryClientRegistrationRepository(keycloakClientRegistration());
+    }
+
+    @Bean
+    public ClientRegistration keycloakClientRegistration() {
+        return ClientRegistration.withRegistrationId("keycloak")
+                .clientId("IS-client")
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .redirectUri("{baseUrl}/login/oauth2/code/keycloak")
+                .scope("openid", "profile")
+                .authorizationUri("http://localhost:8180/realms/IS-realm/protocol/openid-connect/auth")
+                .tokenUri("http://localhost:8180/realms/IS-realm/protocol/openid-connect/token")
+                .jwkSetUri("http://localhost:8180/realms/IS-realm/protocol/openid-connect/certs")
+                .issuerUri("http://localhost:8180/realms/IS-realm")
+                .build();
     }
 
 
 
     @Bean
-    public ClientRegistrationRepository clientRegistrationRepository() {
-        return new InMemoryClientRegistrationRepository(
-                ClientRegistration.withRegistrationId("keycloak")
-                        .clientId("IS-client")
-                        .authorizationUri("http://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/auth")
-                        .tokenUri("http://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/token")
-                        .userInfoUri("http://localhost:8180/auth/realms/IS-realm/protocol/openid-connect/userinfo")
-                        .redirectUri("http://localhost:8080/login/oauth2/code/keycloak") // Убедитесь, что это правильный редирект URI
-                        .scope("openid", "profile")
-                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                        .build()
-        );
-    }
-
-
-
-    private OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> accessTokenResponseClient() {
-        DefaultAuthorizationCodeTokenResponseClient client = new DefaultAuthorizationCodeTokenResponseClient();
-        client.setRestOperations(restOperations());
-        return client;
-    }
-
-    private RestTemplate restOperations() {
-        return new RestTemplate();
+    public OAuth2AuthorizedClientService authorizedClientService() {
+        return new InMemoryOAuth2AuthorizedClientService(clientRegistrationRepository());
     }
 
     @Bean
@@ -148,3 +147,4 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
         });
     }
 }
+
