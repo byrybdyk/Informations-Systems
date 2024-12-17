@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +31,12 @@ public class UserController {
         this.labWorkService = labWorkService;
         this.userService = userService;
 
+    }
+
+    @GetMapping("/info")
+    public String getUserInfo(@AuthenticationPrincipal OAuth2User principal) {
+        // Получение атрибутов пользователя
+        return principal.getAttributes().toString();
     }
 
     @GetMapping("/home")

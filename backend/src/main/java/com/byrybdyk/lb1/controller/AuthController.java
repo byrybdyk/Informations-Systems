@@ -7,8 +7,17 @@ import com.byrybdyk.lb1.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,12 +30,17 @@ public class AuthController {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final AdminRequestService adminRequestService;
+    private final OAuth2AuthorizedClientService authorizedClientService;
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
     @Autowired
-    public AuthController(UserService userService, PasswordEncoder passwordEncoder, AdminRequestService adminRequestService) {
+    public AuthController(UserService userService, PasswordEncoder passwordEncoder, AdminRequestService adminRequestService,
+                          OAuth2AuthorizedClientService authorizedClientService, ClientRegistrationRepository clientRegistrationRepository) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.adminRequestService = adminRequestService;
+        this.authorizedClientService = authorizedClientService;
+        this.clientRegistrationRepository = clientRegistrationRepository;
     }
 
     @PostMapping("/register")
@@ -56,6 +70,19 @@ public class AuthController {
         }
         return new ResponseEntity<>("Invalid username or password.", HttpStatus.UNAUTHORIZED);
     }
+
+//    @GetMapping("/login/oauth2/code/keycloak")
+//    public String handleKeycloakRedirect(@RequestParam("code") String code,
+//                                         @RequestParam("session_state") String state,
+//                                         OAuth2AuthenticationToken authentication) {
+//        System.out.printf("Code:" + code + "\n");
+//        System.out.printf("State:" + state + "\n");
+//        System.out.printf("Authentication:" + authentication + "\n");
+////
+//        // Переход на нужную страницу после успешной авторизации
+//        return "redirect:/user/home";  // или другой маршрут
+//    }
+
 
     private PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

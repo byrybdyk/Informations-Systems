@@ -27,6 +27,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-websocket")
 
 	implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+	implementation ("org.springframework.security:spring-security-oauth2-client")
 	implementation("org.keycloak:keycloak-spring-boot-starter:25.0.3")
 	implementation("org.springframework.security:spring-security-oauth2-jose")
 

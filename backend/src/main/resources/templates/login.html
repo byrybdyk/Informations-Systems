@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>OAuth2 Login with PKCE</title>
 </head>
 <body>
-<h1>Login</h1>
-<form action="http://localhost:8180/realms/IS-realm/protocol/openid-connect/auth" method="get">
-    <input type="hidden" name="response_type" value="code">
-    <input type="hidden" name="client_id" value="IS-client">
-    <input type="hidden" name="scope" value="openid profile">
-    <input type="hidden" name="state" value="randomStateValue">
-    <input type="hidden" name="nonce" value="randomNonceValue">
-    <input type="hidden" name="redirect_uri" value="http://localhost:8080/login/oauth2/code/keycloak">
-    <input type="hidden" name="code_challenge" value="">
-    <input type="hidden" name="code_challenge_method" value="S256">
-    <label for="username">Username:</label>
-    <input type="text" id="username" name="username" required><br><br>
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required><br><br>
-    <button type="submit">Submit</button>
+
+<h1>Login with OAuth2</h1>
+
+<!-- Форма теперь использует стандартный Spring Security OAuth2 процесс -->
+<form id="oauth2-form" action="/oauth2/authorization/keycloak" method="GET">
+    <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+    </div>
+    <div>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+
+    <button type="submit">Login</button>
 </form>
+
 </body>
 </html>
-
