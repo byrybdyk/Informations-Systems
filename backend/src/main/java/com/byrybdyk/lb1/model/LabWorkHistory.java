@@ -57,9 +57,8 @@ public class LabWorkHistory {
     @Column(nullable = false)
     private ChangeType changeType;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "changed_by", nullable = false)
-    private User changedBy;
+    @Column(name = "changed_by", nullable = false)
+    private String changedBy;
 
     // Новое поле для времени изменения
     @Column(name = "update_time", nullable = false)
@@ -154,11 +153,11 @@ public class LabWorkHistory {
         this.owner_id = owner_id;
     }
 
-    public User getChangedBy() {
+    public String getChangedBy() {
         return changedBy;
     }
 
-    public void setChangedBy(User changedBy) {
+    public void setChangedBy(String changedBy) {
         this.changedBy = changedBy;
     }
 

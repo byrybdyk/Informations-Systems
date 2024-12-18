@@ -15,6 +15,7 @@
     import org.springframework.messaging.handler.annotation.MessageMapping;
     import org.springframework.messaging.handler.annotation.Payload;
     import org.springframework.messaging.simp.SimpMessagingTemplate;
+    import org.springframework.security.oauth2.core.user.OAuth2User;
     import org.springframework.web.bind.annotation.*;
     import org.springframework.security.core.Authentication;
 
@@ -78,10 +79,11 @@
         }
 
         @MessageMapping("/labworks/update")
-        public ResponseEntity<LabWork> updateLabWork(@Valid @RequestBody LabWorkDTO labWorkDTO, Principal principal) {
+        public ResponseEntity<LabWork> updateLabWork(@Valid @RequestBody LabWorkDTO labWorkDTO,Authentication authentication) {
             try {
-                String username = principal.getName();
-                LabWork createdLabWork = labWorkService.updateLabWorkFromDTO(labWorkDTO, username);
+                OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+                String username = oauth2User.getAttribute("preferred_username");
+                LabWork createdLabWork = labWorkService.updateLabWorkFromDTO(labWorkDTO, username,authentication);
 
                 System.out.println("Sending message to /topic/labworks: " + createdLabWork);
                 messagingTemplate.convertAndSend("/topic/labworks", createdLabWork);
@@ -94,8 +96,9 @@
         }
 
         @MessageMapping("/labworks/delete")
-        public ResponseEntity deleteLabWork(@Payload LabWorkDeleteMessage message, Principal principal) {
-            String username = principal.getName();
+        public ResponseEntity deleteLabWork(@Payload LabWorkDeleteMessage message,Authentication authentication) {
+                OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+                String username = oauth2User.getAttribute("preferred_username");
             Long labWorkId = message.getLabWorkId();
 
             try {
@@ -125,10 +128,9 @@
         }
 
         @GetMapping("/{labWorkId}/can-edit")
-        public ResponseEntity<Boolean> canEditLabWork(@PathVariable Long labWorkId, Authentication authentication) {
+        public ResponseEntity<Boolean> canEditLabWork(@PathVariable Long labWorkId,  Authentication authentication) {
             try {
-                String currentUsername = authentication.getName();
-                System.out.println("Current username: " + currentUsername);
+
 
                 Optional<LabWork> existingLabWorkOpt = labWorkService.findById(labWorkId);
                 if (!existingLabWorkOpt.isPresent()) {
@@ -138,7 +140,7 @@
                 LabWork labWork = existingLabWorkOpt.get();
                 System.out.println("LabWork ID: " + labWork.getId() + ", Owner ID: " + labWork.getOwner().getId());
 
-                boolean canEdit = labWorkService.canThisUserEditLabWork(labWork, currentUsername);
+                boolean canEdit = labWorkService.canThisUserEditLabWork(labWork, authentication);
                 System.out.println("Can edit ПОЛУЧЕН" + canEdit);
                 if (canEdit) {
                     return new ResponseEntity<>(true, HttpStatus.OK);

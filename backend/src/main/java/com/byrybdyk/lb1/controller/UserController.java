@@ -35,7 +35,6 @@ public class UserController {
 
     @GetMapping("/info")
     public String getUserInfo(@AuthenticationPrincipal OAuth2User principal) {
-        // Получение атрибутов пользователя
         return principal.getAttributes().toString();
     }
 
@@ -89,7 +88,10 @@ public class UserController {
         model.addAttribute("sort", sort);
         model.addAttribute("order", order);
 
-        String userName = authentication.getName();
+        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+        String userName = oauth2User.getAttribute("preferred_username");
+
+
         model.addAttribute("username", userName);
 
         return "user-home";
@@ -98,7 +100,9 @@ public class UserController {
     @GetMapping("/requests")
     public String showUserRequests(Model model, Authentication authentication) {
 
-        String userName = authentication.getName();
+        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+        String userName = oauth2User.getAttribute("preferred_username");
+
         model.addAttribute("username", userName);
 
         return "user-request";

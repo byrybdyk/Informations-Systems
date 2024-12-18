@@ -9,12 +9,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -67,7 +72,7 @@ public class LabWorkService {
         try {
             LabWork labWork = new LabWork();
 
-//            System.out.println("AuthorId " + labWorkDTO.getAuthor().getId() + " AuthorID " + labWorkDTO.getAuthorId());
+//
             Person author = authorService.getOrCreateAuthor(labWorkDTO.getAuthorId() , labWorkDTO.getAuthor());
             labWork.setAuthor(author);
 
@@ -85,8 +90,11 @@ public class LabWorkService {
             mapDtoToLabWork(labWork, labWorkDTO, author, owner);
             LabWork savedLabWork = saveLabWork(labWork);
 
-            User currentUser = userRepository.findByUsername(userName)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            String currentUser = oauth2User.getAttribute("preferred_username");
+
             saveLabWorkHistory(savedLabWork, ChangeType.CREATE, currentUser);
 
             return savedLabWork;
@@ -96,7 +104,7 @@ public class LabWorkService {
         }
     }
 
-    public LabWork updateLabWorkFromDTO(LabWorkDTO labWorkDTO, String currentUserName) {
+    public LabWork updateLabWorkFromDTO(LabWorkDTO labWorkDTO, String currentUserName,Authentication authentication) {
         try {
             Optional<LabWork> existingLabWorkOpt = labWorkRepository.findById(labWorkDTO.getId());
 
@@ -124,8 +132,10 @@ public class LabWorkService {
 
             LabWork updatedLabWork = saveLabWork(labWork);
 
-            User currentUser = userRepository.findByUsername(currentUserName)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            String currentUser = oauth2User.getAttribute("preferred_username");
+
             saveLabWorkHistory(updatedLabWork, ChangeType.UPDATE, currentUser);
 
             return updatedLabWork;
@@ -140,29 +150,45 @@ public class LabWorkService {
         if (existingLabWorkOpt.isPresent()) {
             LabWork labWork = existingLabWorkOpt.get();
 
-            User currentUser = userRepository.findByUsername(currentUserName)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            String currentUser = oauth2User.getAttribute("preferred_username");
+
             saveLabWorkHistory(labWork, ChangeType.DELETE, currentUser);
 
             labWorkRepository.delete(labWork);
         }
     }
 
-    public boolean canThisUserEditLabWork(LabWork labWork, String currentUsername) {
+    public boolean canThisUserEditLabWork(LabWork labWork, Authentication authentication) {
         try {
-            User currentUser = userService.getUserByUsername(currentUsername);
-            return labWork.getOwner().getId() == currentUser.getId() || currentUser.getRole().equals(currentUser.getRole().ADMIN);
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            String currentUsername = oauth2User.getAttribute("preferred_username");
+
+            System.out.println("Current username: " + currentUsername);
+            boolean isOwner = labWork.getOwner().getUsername().equals(currentUsername);
+
+            OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
+            Map<String, Object> attributes = token.getPrincipal().getAttributes();
+
+            List<String> roles = (List<String>) attributes.get("roles");
+            boolean isAdmin = roles != null && roles.contains("ROLE_ADMIN");
+
+            System.out.println("Is user ADMIN? " + isAdmin);
+
+            return isOwner || isAdmin;
         } catch (Exception e) {
             System.out.println("Error while checking edit permissions: " + e.getMessage());
             return false;
         }
     }
 
+
     public Optional<LabWork> findById(Long labWorkId) {
         return labWorkRepository.findById(labWorkId);
     }
 
-    private void saveLabWorkHistory(LabWork labWork, ChangeType changeType, User changedBy) {
+    private void saveLabWorkHistory(LabWork labWork, ChangeType changeType, String changedBy) {
         LabWorkHistory history = new LabWorkHistory();
         history.setName(labWork.getName());
         history.setCreationDate(labWork.getCreationDate());
