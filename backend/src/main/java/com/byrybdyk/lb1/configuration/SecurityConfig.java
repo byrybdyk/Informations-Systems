@@ -1,5 +1,6 @@
 package com.byrybdyk.lb1.configuration;
 
+
 import com.byrybdyk.lb1.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -17,14 +18,18 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import java.util.*;
 
 @Configuration
 @EnableWebSecurity
@@ -33,42 +38,65 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
 
     private final UserService userService;
 
+
     @Autowired
     public SecurityConfig(UserService userService) {
         this.userService = userService;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, MessageSource messageSource) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeRequests()
                 .requestMatchers("/auth/register", "/auth/login", "/register", "/login", "/login*").permitAll()
-                .requestMatchers("/auth/login/oauth2/**","/oauth2/authorization/keycloak","oauth2/code/keycloak","/error").permitAll()
+                .requestMatchers("/auth/login/oauth2/**", "/oauth2/authorization/keycloak", "oauth2/code/keycloak", "/error").permitAll()
+                .requestMatchers("/admin/**").hasAnyAuthority("SCOPE_Admin_scope")
+                .requestMatchers("/user/**").authenticated()
+                .requestMatchers("/labworks/**").authenticated()
+                .requestMatchers("/ws/**").authenticated()
                 .anyRequest().authenticated()
                 .and()
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login")
                         .successHandler((request, response, authentication) -> {
                             if (authentication != null) {
-                                response.sendRedirect("/user/home");
+                                authentication.getAuthorities().forEach(grantedAuthority -> {
+                                    System.out.println("Granted authority: " + grantedAuthority.getAuthority());
+                                });
+
+                                OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
+                                Map<String, Object> attributes = token.getPrincipal().getAttributes();
+
+                                List<String> roles = (List<String>) attributes.get("roles");
+                                boolean isAdmin = roles != null && roles.contains("ROLE_ADMIN");
+                                System.out.println("!!!!!Is admin: " + isAdmin);
+
+                                String redirectUrl = isAdmin ? "/admin/home" : "/user/home";
+                                response.sendRedirect(redirectUrl);
                             } else {
                                 System.out.println("login success handler: authentication is null");
                                 response.sendRedirect("/login?error");
                             }
                         })
                         .failureHandler((request, response, exception) -> {
+                            System.out.println("login failure handler: " + exception.getMessage());
                             response.sendRedirect("/login?error");
                         })
-
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("http://localhost:8180/realms/IS-realm/protocol/openid-connect/logout?redirect_uri=http://localhost:8080/login")
-                        .permitAll());
+                        .permitAll())
+                .headers().frameOptions().sameOrigin()
+                .and()
+                .exceptionHandling()
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.sendRedirect("/user/home");
+                });
+
         return http.build();
     }
-
 
 
     @Bean
@@ -111,4 +139,6 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
             }
         });
     }
+
+
 }
