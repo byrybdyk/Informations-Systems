@@ -20,16 +20,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 
 @Configuration
 @EnableWebSecurity
@@ -48,48 +43,32 @@ public class SecurityConfig implements WebSocketMessageBrokerConfigurer {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeRequests()
-                .requestMatchers("/auth/register", "/auth/login", "/register", "/login").permitAll()
+                .requestMatchers("/auth/register", "/auth/login", "/register", "/login", "/login*").permitAll()
                 .requestMatchers("/auth/login/oauth2/**","/oauth2/authorization/keycloak","oauth2/code/keycloak","/error").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/login") // Если кастомная страница входа используется
+                        .loginPage("/login")
                         .successHandler((request, response, authentication) -> {
                             if (authentication != null) {
-                                System.out.println("Пользователь вошел: " + authentication.getName());
-                                // Лог перед редиректом
-                                System.out.println("Перенаправление на /user/home");
                                 response.sendRedirect("/user/home");
                             } else {
-                                System.out.println("ОШИБКА ВХОДА");
-                                // Лог перед редиректом
-                                System.out.println("Перенаправление на /login?error");
+                                System.out.println("login success handler: authentication is null");
                                 response.sendRedirect("/login?error");
                             }
                         })
                         .failureHandler((request, response, exception) -> {
-                            System.out.println("Ошибка аутентификации: " + exception.getMessage());
-                            System.out.println("Перенаправление на /login?error");
                             response.sendRedirect("/login?error");
                         })
 
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
+                        .logoutSuccessUrl("http://localhost:8180/realms/IS-realm/protocol/openid-connect/logout?redirect_uri=http://localhost:8080/login")
                         .permitAll());
         return http.build();
     }
 
-//    @Bean
-//    public OAuth2UserService<OidcUserRequest, OidcUser> customOidcUserService() {
-//        return userRequest -> {
-//            OidcUser oidcUser = new OidcUserService().loadUser(userRequest);
-//            // Логируем информацию о пользователе
-//            System.out.println("Пользователь из Keycloak: " + oidcUser.getName());
-//            return oidcUser;
-//        };
-//    }
 
 
     @Bean
