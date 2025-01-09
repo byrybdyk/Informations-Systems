@@ -102,7 +102,7 @@
             Long labWorkId = message.getLabWorkId();
 
             try {
-                labWorkService.deleteLabWork(labWorkId, username);
+                labWorkService.deleteLabWork(labWorkId, username,authentication);
                 LabWorkDeleteMessage deleteMessage = new LabWorkDeleteMessage(labWorkId);
                 deleteMessage.setType("delete");
                 messagingTemplate.convertAndSend("/topic/labworks", deleteMessage);

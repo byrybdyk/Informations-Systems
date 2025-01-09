@@ -145,12 +145,11 @@ public class LabWorkService {
         }
     }
 
-    public void deleteLabWork(Long labWorkId, String currentUserName) {
+    public void deleteLabWork(Long labWorkId, String currentUserName, Authentication authentication) {
         Optional<LabWork> existingLabWorkOpt = labWorkRepository.findById(labWorkId);
         if (existingLabWorkOpt.isPresent()) {
             LabWork labWork = existingLabWorkOpt.get();
 
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
             String currentUser = oauth2User.getAttribute("preferred_username");
 

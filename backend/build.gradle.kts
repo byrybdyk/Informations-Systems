@@ -26,10 +26,21 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-websocket")
 
-	implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+	implementation ("org.springframework.boot:spring-boot-starter-oauth2-client")
 	implementation ("org.springframework.security:spring-security-oauth2-client")
+
+	implementation ("org.springframework.security:spring-security-oauth2-client")
+	implementation ("org.springframework.security:spring-security-oauth2-jose")
+
+
 	implementation("org.keycloak:keycloak-spring-boot-starter:25.0.3")
 	implementation("org.springframework.security:spring-security-oauth2-jose")
+	implementation("org.keycloak:keycloak-admin-client:22.0.5")
+	implementation("org.keycloak:keycloak-core:22.0.5")
+
+	implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
+	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
