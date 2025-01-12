@@ -1,6 +1,7 @@
 package com.byrybdyk.lb1.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 
 @Entity
 @Table(name = "discipline")
@@ -11,9 +12,12 @@ public class Discipline {
     private Long id;
 
     @Column(nullable = false)
+    @NotNull(message = "Название дисциплины не может быть пустым")
+    @NotBlank(message = "Название дисциплины не может быть пустым")
     private String name;
 
     @Column(name = "practice_hours", nullable = false)
+    @Min(value = 1, message = "Часы практики должны быть больше 0")
     private long practiceHours;
 
     public Long getId() {

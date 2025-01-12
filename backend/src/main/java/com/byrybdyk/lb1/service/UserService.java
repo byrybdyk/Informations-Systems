@@ -40,6 +40,14 @@ public class UserService implements UserDetailsService {
         return userRepository.findByUsername(username);
     }
 
+//    public Long getUserIdByUsername(String username) {
+//        User user = userRepository.findByUsername(username);
+//        if (user != null) {
+//            return user.getId();
+//        }
+//        throw new RuntimeException("User not found: " + username);
+//    }
+
     public void registerNewUser(String username, String password, Role role) {
         User user = new User();
         user.setUsername(username);
@@ -54,5 +62,16 @@ public class UserService implements UserDetailsService {
 
     private PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    public User getUserByUsername(String currentUsername) {
+        return userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    public User getCurrentAuthenticatedUser() {
+        String currentUsername = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
     }
 }

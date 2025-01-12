@@ -4,10 +4,1004 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Home</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+    <style>
+        .table-container {
+            width: 100%;
+            max-height: 400px;
+            overflow: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+
+
+    <script th:inline="javascript">
+        var labWorks = /*[[${labWorks}]]*/ [];
+        var stompClient = null;
+        const pageSize = 5;
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentSortColumn = null;
+        let currentSortOrder = 'asc';
+        let currentFilters = {};
+
+        function connect() {
+            var socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, function (frame) {
+                console.log('Connected: ' + frame);
+
+                stompClient.subscribe('/topic/labworks', function (message) {
+                    var labWork = JSON.parse(message.body);
+                    console.log('---------------------------------', message);
+
+                    if (labWork.type === 'delete' && labWork.labWorkId) {
+                        onLabWorkDelete(labWork.labWorkId);
+                    } else {
+                        onLabWorkUpdate(labWork);
+                    }
+                });
+            }, function (error) {
+                console.error('WebSocket connection failed: ' + error);
+            });
+        }
+
+        function onLabWorkUpdate(labWork) {
+            console.log('LabWork updated:', labWork);
+
+            if (labWork.id == null) {
+                return;
+            }
+
+            const row = document.querySelector(`tr[data-id="${labWork.id}"]`);
+            if (row) {
+                row.innerHTML = `
+                    <td>${labWork.id}</td>
+                    <td>${labWork.owner.username}</td>
+                    <td>${formatUTCDate(labWork.creationDate)}</td>
+                    <td>${labWork.name}</td>
+                    <td>${labWork.discipline.name}</td>
+                    <td>${labWork.discipline.practiceHours}</td>
+                    <td>${labWork.description}</td>
+                    <td>${labWork.difficulty}</td>
+                    <td>${labWork.coordinates.x}</td>
+                    <td>${labWork.coordinates.y}</td>
+                    <td>${labWork.minimalPoint}</td>
+                    <td>${labWork.personalQualitiesMaximum}</td>
+                    <td>${labWork.personalQualitiesMinimum}</td>
+                    <td>${labWork.author.name}</td>
+                    <td>${labWork.author.weight}</td>
+                    <td>${labWork.author.eyeColor}</td>
+                    <td>${labWork.author.hairColor}</td>
+                    <td>${labWork.author.location.x}</td>
+                    <td>${labWork.author.location.y}</td>
+                    <td>${labWork.author.location.name}</td>
+                    <td>${labWork.author.passportID}</td>
+                    <td><button onclick="openFormModal(${labWork.id})">Edit</button></td>
+                    <td><button onclick="confirmDeleteLabWork(${labWork.id})">Delete</button></td>
+                `;
+            }
+            else{
+                renderTable(currentPage);
+            }
+        }
+
+        function onLabWorkDelete(labWorkId) {
+            labWorks = labWorks.filter(labWork => labWork.id !== labWorkId);
+
+            const row = document.querySelector(`tr[data-id="${labWorkId}"]`);
+            if (row) {
+                row.remove();
+                console.log(`LabWork with ID ${labWorkId} has been deleted from the table.`);
+            }
+
+            renderTable(currentPage);
+        }
+
+        function renderTable(page) {
+            const pageSize = 6;
+            let url = `/labworks/home?page=${page}&size=${pageSize}`;
+
+            if (currentSortColumn) {
+                url += `&sort=${currentSortColumn}&order=${currentSortOrder}`;
+            }
+
+            Object.keys(currentFilters).forEach(key => {
+                if (currentFilters[key]) {
+                    url += `&${key}=${encodeURIComponent(currentFilters[key])}`;
+                }
+            });
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('labWorkTableBody');
+                    tableBody.innerHTML = "";
+                    data.labWorks.forEach(labWork => {
+                        const row = document.createElement('tr');
+                        row.setAttribute('data-id', labWork.id);
+                        row.innerHTML = `
+                    <td>${labWork.id}</td>
+                    <td>${labWork.owner.username}</td>
+                    <td>${formatUTCDate(labWork.creationDate)}</td>
+                    <td>${labWork.name}</td>
+                    <td>${labWork.discipline.name}</td>
+                    <td>${labWork.discipline.practiceHours}</td>
+                    <td>${labWork.description}</td>
+                    <td>${labWork.difficulty}</td>
+                    <td>${labWork.coordinates.x}</td>
+                    <td>${labWork.coordinates.y}</td>
+                    <td>${labWork.minimalPoint}</td>
+                    <td>${labWork.personalQualitiesMaximum}</td>
+                    <td>${labWork.personalQualitiesMinimum}</td>
+                    <td>${labWork.author.name}</td>
+                    <td>${labWork.author.weight}</td>
+                    <td>${labWork.author.eyeColor}</td>
+                    <td>${labWork.author.hairColor}</td>
+                    <td>${labWork.author.location.x}</td>
+                    <td>${labWork.author.location.y}</td>
+                    <td>${labWork.author.location.name}</td>
+                    <td>${labWork.author.passportID}</td>
+                    <td><button onclick="openFormModal(${labWork.id})">Edit</button></td>
+                    <td><button onclick="confirmDeleteLabWork(${labWork.id})">Delete</button></td>
+                `;
+                        tableBody.appendChild(row);
+                    });
+
+                    currentPage = data.currentPage;
+                    totalPages = data.totalPages;
+
+                    document.getElementById('currentPage').textContent = currentPage;
+                    document.getElementById('totalPages').textContent = totalPages;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable(currentPage);
+            }
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable(currentPage);
+            }
+        }
+
+        window.onload = function () {
+            connect();
+            renderTable(currentPage);
+        };
+
+        async function addLabWork() {
+
+            removeRequiredIfHidden();
+
+            const formData = new FormData(document.getElementById('labWorkForm'));
+
+            const labWorkDTO = {
+                name: formData.get('name'),
+
+                coordinates: formData.get('coordinatesId') ? { id: formData.get('coordinatesId') } : {
+                    x: formData.get('newCoordinatesX'),
+                    y: formData.get('newCoordinatesY')
+                },
+
+                description: formData.get('description'),
+
+                difficulty: formData.get('difficulty'),
+
+                discipline: formData.get('disciplineId') ? { id: formData.get('disciplineId') } : {
+                    name: formData.get('newDisciplineName'),
+                    practiceHours: formData.get('newPracticeHours')
+                },
+
+                minimalPoint: formData.get('minimalPoint'),
+                personalQualitiesMinimum: formData.get('personalQualitiesMinimum'),
+                personalQualitiesMaximum: formData.get('personalQualitiesMaximum'),
+                author: formData.get('authorId') ? { id: formData.get('authorId')}  : {
+                    name: formData.get('newAuthorName'),
+                    weight: formData.get('newAuthorWeight'),
+                    location: formData.get('locationId') ? { id: formData.get('locationId') } : {
+                        name: formData.get('newLocationName'),
+                        x: formData.get('newLocationX'),
+                        y: formData.get('newLocationY')
+                    },
+                    eyeColor: formData.get('newAuthorEyeColor'),
+                    hairColor: formData.get('newAuthorHairColor'),
+                    passportID: formData.get('passportID')
+                },
+                ownerName: document.getElementById("userName").textContent
+            };
+
+            stompClient.send("/app/labworks/add", {}, JSON.stringify(labWorkDTO));
+
+            closeModal();
+        }
+
+        function removeRequiredIfHidden() {
+            const hiddenFields = document.querySelectorAll('[required]');
+            hiddenFields.forEach(field => field.removeAttribute('required'));
+        }
+
+
+        async function editLabWork(event, labWorkId) {
+            if (event && event.preventDefault) {
+                event.preventDefault();
+            }
+            removeRequiredIfHidden();
+            const formData = new FormData(document.getElementById('labWorkForm'));
+            const owner = document.getElementById('ownerField').value;
+            const labWorkDTO = {
+                id: labWorkId,
+                name: formData.get('name'),
+
+                coordinates: formData.get('coordinatesId') ? { id: formData.get('coordinatesId') } : {
+                    x: formData.get('newCoordinatesX'),
+                    y: formData.get('newCoordinatesY')
+                },
+
+                description: formData.get('description'),
+
+                difficulty: formData.get('difficulty'),
+
+                discipline: formData.get('disciplineId') ? { id: formData.get('disciplineId') } : {
+                    name: formData.get('newDisciplineName'),
+                    practiceHours: formData.get('newPracticeHours')
+                },
+
+                minimalPoint: formData.get('minimalPoint'),
+                personalQualitiesMinimum: formData.get('personalQualitiesMinimum'),
+                personalQualitiesMaximum: formData.get('personalQualitiesMaximum'),
+                author: formData.get('authorId') ? { id: formData.get('authorId')}  : {
+                    name: formData.get('newAuthorName'),
+                    weight: formData.get('newAuthorWeight'),
+                    location: formData.get('locationId') ? { id: formData.get('locationId') } : {
+                        name: formData.get('newLocationName'),
+                        x: formData.get('newLocationX'),
+                        y: formData.get('newLocationY')
+                    },
+                    eyeColor: formData.get('newAuthorEyeColor'),
+                    hairColor: formData.get('newAuthorHairColor'),
+                    passportID: formData.get('passportID')
+                },
+                ownerName: owner
+            };
+
+            stompClient.send("/app/labworks/update", {}, JSON.stringify(labWorkDTO));
+
+            closeModal();
+        }
+
+
+        function toggleCreateCoordinates() {
+            const fields = document.getElementById("newCoordinatesFields");
+            const select = document.getElementById("coordinatesId");
+            const inputs = fields.querySelectorAll('input');
+
+            if (select.value === '') {
+                fields.style.display = 'block';
+                inputs.forEach(input => input.required = true);
+            } else {
+                fields.style.display = 'none';
+                inputs.forEach(input => input.required = false);
+            }
+        }
+
+        function createNewCoordinates() {
+            const fields = document.getElementById("newCoordinatesFields");
+            const select = document.getElementById("coordinatesId");
+
+            select.required = false;
+
+            const inputs = fields.querySelectorAll('input');
+            inputs.forEach(input => input.required = true);
+
+            select.value = "";
+            fields.style.display = "block";
+        }
+
+
+        function toggleCreateDiscipline() {
+            const fields = document.getElementById("newDisciplineFields");
+            const select = document.getElementById("disciplineId");
+            const inputs = fields.querySelectorAll('input');
+
+            if (select.value === '') {
+                fields.style.display = 'block';
+                inputs.forEach(input => input.required = true);
+            } else {
+                fields.style.display = 'none';
+                inputs.forEach(input => input.required = false);
+            }
+        }
+
+        function createNewDiscipline() {
+            const fields = document.getElementById("newDisciplineFields");
+            const select = document.getElementById("disciplineId");
+
+            select.required = false;
+
+            const inputs = fields.querySelectorAll('input');
+            inputs.forEach(input => input.required = true);
+
+            select.value = "";
+            fields.style.display = "block";
+        }
+
+        function toggleCreateAuthor() {
+            const fields = document.getElementById("newAuthorFields");
+            const select = document.getElementById("authorId");
+            const inputs = fields.querySelectorAll('input');
+
+            if (select.value === '') {
+                fields.style.display = 'block';
+                inputs.forEach(input => input.required = true);
+            } else {
+                fields.style.display = 'none';
+                inputs.forEach(input => input.required = false);
+            }
+        }
+
+        function createNewAuthor() {
+            const fields = document.getElementById("newAuthorFields");
+            const select = document.getElementById("authorId");
+
+            select.required = false;
+
+            const inputs = fields.querySelectorAll('input');
+            inputs.forEach(input => input.required = true);
+
+            select.value = "";
+            fields.style.display = "block";
+        }
+
+        function toggleCreateLocation() {
+            const fields = document.getElementById("newLocationFields");
+            const select = document.getElementById("locationId");
+            const inputs = fields.querySelectorAll('input');
+
+            if (select.value === '') {
+                fields.style.display = 'block';
+                inputs.forEach(input => input.required = true);
+            } else {
+                fields.style.display = 'none';
+                inputs.forEach(input => input.required = false);
+            }
+        }
+
+        function createNewLocation() {
+            const fields = document.getElementById("newLocationFields");
+            const select = document.getElementById("locationId");
+
+            select.required = false;
+
+            const inputs = fields.querySelectorAll('input');
+            inputs.forEach(input => input.required = true);
+
+            select.value = "";
+            fields.style.display = "block";
+        }
+
+        function restoreRequiredFields() {
+            const requiredFields = [
+                "labWorkName",
+                "labWorkDescription",
+                "labWorkDifficulty",
+                "coordinatesId",
+                "disciplineId",
+                "minimalPoint",
+                "personalQualitiesMinimum",
+                "personalQualitiesMaximum",
+                "authorId"
+            ];
+
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.required = true;
+                }
+            });
+        }
+
+
+        document.getElementById('coordinatesId').addEventListener('change', function () {
+            if (this.value) {
+                document.getElementById('newCoordinatesFields').style.display = 'none';
+            }
+        });
+        document.getElementById('disciplineId').addEventListener('change', function () {
+            if (this.value) {
+                document.getElementById('newDisciplineFields').style.display = 'none';
+            }
+        });
+        document.getElementById('authorId').addEventListener('change', function () {
+            if (this.value) {
+                document.getElementById('newAuthorFields').style.display = 'none';
+            }
+        });
+        document.getElementById('locationId').addEventListener('change', function () {
+            if (this.value) {
+                document.getElementById('newLocationFields').style.display = 'none';
+            }
+        });
+
+        function resetForm() {
+            const form = document.getElementById('labWorkForm');
+            form.reset();
+        }
+
+        function isValidFloat(value) {
+            return !isNaN(value) && value > 0;
+        }
+
+        function isValidInt(value) {
+            return Number.isInteger(Number(value)) && value > 0;
+        }
+
+        function isValidLong(value) {
+            return !isNaN(value) && Number.isInteger(Number(value)) && value > 0;
+        }
+
+        function isValidDouble(value) {
+            return !isNaN(value) && value > 0;
+        }
+
+        function isValidInteger(value) {
+            return Number.isInteger(Number(value)) && value > 0;
+        }
+
+        function validateFields() {
+            const fieldsToValidate = [
+                { name: 'newCoordinatesX', validator: isValidFloat },
+                { name: 'newCoordinatesY', validator: isValidInt },
+                { name: 'newPracticeHours', validator: isValidLong },
+                { name: 'minimalPoint', validator: isValidFloat },
+                { name: 'personalQualitiesMinimum', validator: isValidDouble },
+                { name: 'personalQualitiesMaximum', validator: isValidFloat },
+                { name: 'newAuthorWeight', validator: isValidDouble },
+                { name: 'passportID', validator: isValidInteger },
+                { name: 'newLocationX', validator: isValidFloat },
+                { name: 'newLocationY', validator: isValidFloat }
+            ];
+
+            let isValid = true;
+
+            fieldsToValidate.forEach(({ name, validator }) => {
+                const field = document.querySelector(`[name="${name}"]`);
+
+                if (field && field.offsetParent !== null) {
+                    const value = field.value;
+                    if (!validator(value)) {
+                        alert(`Поле "${name}" имеет неверное значение. Оно должно быть больше нуля и соответствовать типу.`);
+                        isValid = false;
+                    }
+                }
+            });
+
+            return isValid;
+        }
+
+        function formatUTCDate(dateString) {
+            let date = new Date(dateString);
+            return date.getUTCFullYear() + "-" +
+                ("0" + (date.getUTCMonth() + 1)).slice(-2) + "-" +
+                ("0" + date.getUTCDate()).slice(-2) + " " +
+                ("0" + date.getUTCHours()).slice(-2) + ":" +
+                ("0" + date.getUTCMinutes()).slice(-2) + ":" +
+                ("0" + date.getUTCSeconds()).slice(-2) + "." +
+                ("00" + date.getUTCMilliseconds()).slice(-3);
+        }
+
+        function populateSelectOptions(selectId, items, selectedId) {
+            const selectElement = document.querySelector(`[name=${selectId}]`);
+            selectElement.innerHTML = '<option value="">-- Select --</option>';
+
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = typeof item.name !== 'undefined' ? item.name : `${item.x}, ${item.y}`;
+                if (item.id === selectedId) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+        }
+
+        async function openFormModal(labWorkId = null) {
+            let labWork = null;
+            if (labWorkId) {
+                try {
+                    const response = await fetch(`/labworks/${labWorkId}`);
+                    if (response.ok) {
+                        labWork = await response.json();
+                    } else {
+                        console.error('Lab work not found');
+                        Swal.fire({
+                            title: "Error",
+                            icon: "error",
+                            text: "Lab Work not found.",
+                            confirmButtonText: "OK",
+                        });
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error fetching lab work data:', error);
+                    Swal.fire({
+                        title: "Error",
+                        icon: "error",
+                        text: "An error occurred while fetching the lab work data.",
+                        confirmButtonText: "OK",
+                    });
+                    return;
+                }
+            }
+
+            document.getElementById("newCoordinatesFields").style.display = "none";
+            document.getElementById("newDisciplineFields").style.display = "none";
+            document.getElementById("newAuthorFields").style.display = "none";
+            document.getElementById("newLocationFields").style.display = "none";
+            const submitButton = document.getElementById("submitButton");
+
+            if (labWork) {
+                const currentUserName = document.getElementById("userName").textContent;
+                if ( await canEdit(labWorkId) === true) {
+                    document.getElementById("modalTitle").textContent = "Edit Lab Work";
+                    submitButton.textContent = "Update Lab Work";
+                    submitButton.setAttribute("value", "update");
+
+                    document.getElementById("labWorkId").value = labWork.id || "";
+                    document.getElementById("labWorkName").value = labWork.name || "";
+                    document.getElementById("labWorkDescription").value = labWork.description || "";
+                    document.getElementById("labWorkDifficulty").value = labWork.difficulty || "";
+                    document.getElementById("minimalPoint").value = labWork.minimalPoint || "";
+                    document.getElementById("personalQualitiesMinimum").value = labWork.personalQualitiesMinimum || "";
+                    document.getElementById("personalQualitiesMaximum").value = labWork.personalQualitiesMaximum || "";
+                    document.getElementById("ownerField").value = labWork.owner.username || "";
+                }
+                else {
+                    closeModal()
+                    return
+                }
+            } else {
+                resetForm()
+                restoreRequiredFields();
+                document.getElementById("modalTitle").textContent = "Add Lab Work";
+                submitButton.textContent = "Add Lab Work";
+                submitButton.setAttribute("value", "add");
+            }
+
+            fetch('/labworks/form-data')
+                .then(response => response.json())
+                .then(data => {
+                    populateSelectOptions('disciplineId', data.disciplines, 'name');
+                    populateSelectOptions('coordinatesId', data.coordinates, coord => `X: ${coord.x}, Y: ${coord.y}`);
+                    populateSelectOptions('authorId', data.authors, 'name');
+                    populateSelectOptions('locationId', data.locations, 'name');
+
+                    if (labWork) {
+                        document.getElementById("coordinatesId").value = labWork.coordinates.id || "";
+                        document.getElementById("disciplineId").value = labWork.discipline.id || "";
+                        document.getElementById("authorId").value = labWork.author.id || "";
+                        document.getElementById("locationId").value = labWork.author.location.id || "";
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching form data:', error);
+                });
+
+            document.getElementById("labWorkModal").style.display = "block";
+        }
+
+        async function handleSubmit(event, labWorkId) {
+            event.preventDefault();
+
+            if (!validateFields()) {
+                return;
+            }
+            const form = document.getElementById('labWorkForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            const action = document.getElementById("submitButton").value;
+
+            if ((action === 'update' && labWorkId)) {
+                editLabWork(event, labWorkId);
+            } else {
+                addLabWork(data);
+            }
+            closeModal();
+        }
+
+        document.getElementById('labWorkForm').addEventListener('submit', handleSubmit);
+
+        function closeModal() {
+            document.getElementById("labWorkModal").style.display = "none";
+            resetForm();
+        }
+
+        async function canEdit(labWorkId) {
+
+            const response = await fetch(`/labworks/${labWorkId}/can-edit`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const canDelete = await response.json();
+            if (canDelete){
+                return true;
+            }
+            else {
+                closeModal()
+                console.error('Permission denied to edit this lab work');
+                Swal.fire({
+                    title: "Permission Denied",
+                    icon: "error",
+                    text: "You can only edit your own lab works.",
+                    confirmButtonText: "OK",
+                });
+                return false;
+            }
+        }
+
+
+        async function confirmDeleteLabWork(labWorkId) {
+            if ( await canEdit(labWorkId) === true) {
+                stompClient.send('/app/labworks/delete', {}, JSON.stringify({
+                    labWorkId: labWorkId}));
+            }
+        }
+
+        function applySorting(column) {
+            if (currentSortColumn === column) {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = column;
+                currentSortOrder = 'asc';
+            }
+            renderTable(currentPage);
+        }
+
+        function applyFilters() {
+            currentFilters = {
+                id: document.getElementById('filterId').value,
+                ownerUsername: document.getElementById('filterOwnerUsername').value,
+                creationDate: document.getElementById('filterCreationDate').value,
+                name: document.getElementById('filterName').value,
+                disciplineName: document.getElementById('filterDisciplineName').value,
+                disciplinePracticeHours: document.getElementById('filterDisciplinePracticeHours').value,
+                description: document.getElementById('filterDescription').value,
+                difficulty: document.getElementById('filterDifficulty').value,
+                coordinatesX: document.getElementById('filterCoordinatesX').value,
+                coordinatesY: document.getElementById('filterCoordinatesY').value,
+                minimalPoint: document.getElementById('filterMinimalPoint').value,
+                personalQualitiesMaximum: document.getElementById('filterPersonalQualitiesMaximum').value,
+                personalQualitiesMinimum: document.getElementById('filterPersonalQualitiesMinimum').value,
+                authorName: document.getElementById('filterAuthorName').value,
+                authorWeight: document.getElementById('filterAuthorWeight').value,
+                authorEyeColor: document.getElementById('filterAuthorEyeColor').value,
+                authorHairColor: document.getElementById('filterAuthorHairColor').value,
+                authorLocationX: document.getElementById('filterAuthorLocationX').value,
+                authorLocationY: document.getElementById('filterAuthorLocationY').value,
+                authorLocationName: document.getElementById('filterAuthorLocationName').value,
+                authorPassportID: document.getElementById('filterAuthorPassportID').value,
+            };
+
+            renderTable(currentPage);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterName').value = "";
+            document.getElementById('filterDescription').value = "";
+            document.getElementById('filterAuthorName').value = "";
+
+            currentFilters = {};
+            renderTable(1);
+        }
+    </script>
 </head>
+
 <body>
-<h1>Welcome, <span th:text="${username}">User</span>!</h1>
+<h1>Welcome, <span th:text="${username}" id="userName">User</span>!</h1>
 <p>This is the user area.</p>
+
+<button onclick="openFormModal()">Add Lab Work</button>
+
+<div id="labWorkModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle">Add Lab Work</h2>
+        <form id="labWorkForm" onsubmit="handleSubmit(event, document.getElementById('labWorkId').value)">
+            <input type="hidden" id="labWorkId" name="id">
+
+            <label for="name">Lab Work Name:</label>
+            <input
+                    type="text"
+                    name="name"
+                    id="labWorkName"
+                    placeholder="Lab Work Name"
+                    required
+                    minlength="1"
+            >
+
+            <label for="coordinatesId">Coordinates:</label>
+            <select name="coordinatesId" id="coordinatesId" onchange="toggleCreateCoordinates()" required>
+                <option value="">-- Select Coordinates --</option>
+            </select>
+            <button type="button" onclick="createNewCoordinates()">Create New Coordinates</button>
+            <div id="newCoordinatesFields" style="display:none;">
+                <input
+                        type="number"
+                        name="newCoordinatesX"
+                        placeholder="New Coordinates X"
+                        step="any"
+                >
+                <input
+                        type="number"
+                        name="newCoordinatesY"
+                        placeholder="New Coordinates Y"
+                        step="1"
+                >
+            </div>
+
+            <label for="description">Description:</label>
+            <input
+                    type="text"
+                    name="description"
+                    id="labWorkDescription"
+                    placeholder="Description"
+                    minlength="1"
+                    required
+            >
+
+            <label for="difficulty">Difficulty:</label>
+            <select name="difficulty" id="labWorkDifficulty" required>
+                <option value="">-- Select Difficulty --</option>
+                <option value="VERY_EASY">VERY_EASY</option>
+                <option value="HARD">HARD</option>
+                <option value="INSANE">INSANE</option>
+            </select>
+
+            <label for="disciplineId">Discipline:</label>
+            <select name="disciplineId" id="disciplineId" onchange="toggleCreateDiscipline()" required>
+                <option value="">-- Select Discipline --</option>
+            </select>
+            <button type="button" onclick="createNewDiscipline()">Create New Discipline</button>
+            <div id="newDisciplineFields" style="display:none;">
+                <input
+                        type="text"
+                        name="newDisciplineName"
+                        placeholder="New Discipline Name"
+                >
+                <input
+                        type="number"
+                        name="newPracticeHours"
+                        placeholder="Practice Hours"
+                        step="1"
+                >
+            </div>
+
+            <label for="minimal_point">Minimal Point:</label>
+            <input
+                    type="number"
+                    name="minimalPoint"
+                    id="minimalPoint"
+                    placeholder="Minimal Point"
+                    required
+                    step="any"
+            >
+
+            <label for="personal_qualities_minimum">Personal Qualities Minimum:</label>
+            <input
+                    type="number"
+                    name="personalQualitiesMinimum"
+                    id="personalQualitiesMinimum"
+                    placeholder="Personal Qualities Minimum"
+                    required
+                    step="any"
+            >
+
+            <label for="personal_qualities_maximum">Personal Qualities Maximum:</label>
+            <input
+                    type="number"
+                    name="personalQualitiesMaximum"
+                    id="personalQualitiesMaximum"
+                    placeholder="Personal Qualities Maximum"
+                    required
+                    step="any"
+            >
+
+            <label for="authorId">Author:</label>
+            <select name="authorId" id="authorId" onchange="toggleCreateAuthor()" required>
+                <option value="">-- Select Author --</option>
+            </select>
+            <button type="button" onclick="createNewAuthor()">Create New Author</button>
+            <div id="newAuthorFields" style="display:none;">
+                <input
+                        type="text"
+                        name="newAuthorName"
+                        placeholder="New Author Name"
+                >
+                <input
+                        type="number"
+                        name="newAuthorWeight"
+                        placeholder="Author Weight"
+                        step="any"
+                >
+                <label for="newAuthorEyeColor">Eye Color:</label>
+                <select name="newAuthorEyeColor" id="newAuthorEyeColor">
+                    <option value="WHITE">WHITE</option>
+                    <option value="ORANGE">ORANGE</option>
+                    <option value="BLACK">BLACK</option>
+                    <option value="YELLOW">YELLOW</option>
+                    <option value="BROWN">BROWN</option>
+                </select>
+                <label for="newAuthorHairColor">Hair Color:</label>
+                <select name="newAuthorHairColor" id="newAuthorHairColor">
+                    <option value="WHITE">WHITE</option>
+                    <option value="ORANGE">ORANGE</option>
+                    <option value="BLACK">BLACK</option>
+                    <option value="YELLOW">YELLOW</option>
+                    <option value="BROWN">BROWN</option>
+                </select>
+                <input
+                        type="number"
+                        name="passportID"
+                        placeholder="Passport ID"
+                        step="1"
+                >
+                <label for="locationId">Location:</label>
+                <select name="locationId" id="locationId" onchange="toggleCreateLocation()">
+                    <option value="">-- Select Location --</option>
+                </select>
+                <button type="button" onclick="createNewLocation()">Create New Location</button>
+                <div id="newLocationFields" style="display:none;">
+                    <input
+                            type="number"
+                            name="newLocationX"
+                            placeholder="New Location X"
+                            step="any"
+                    >
+                    <input
+                            type="number"
+                            name="newLocationY"
+                            placeholder="New Location Y"
+                            step="any"
+                    >
+                    <input
+                            type="text"
+                            name="newLocationName"
+                            placeholder="New Location Name"
+                    >
+                </div>
+                <input type="hidden" id="ownerField" name="ownerField">
+            </div>
+
+            <button type="submit" id="submitButton" name="action" value="add">Add Lab Work</button>
+        </form>
+    </div>
+</div>
+
+<br>
+
+<div>
+    <input type="text" id="filterId" placeholder="Filter by ID" oninput="applyFilters()">
+    <input type="text" id="filterOwnerUsername" placeholder="Filter by Owner Username" oninput="applyFilters()">
+    <input type="text" id="filterCreationDate" placeholder="Filter by Creation Date" oninput="applyFilters()">
+    <input type="text" id="filterName" placeholder="Filter by Name" oninput="applyFilters()">
+    <input type="text" id="filterDisciplineName" placeholder="Filter by Discipline Name" oninput="applyFilters()">
+    <input type="text" id="filterDisciplinePracticeHours" placeholder="Filter by Practice Hours" oninput="applyFilters()">
+    <input type="text" id="filterDescription" placeholder="Filter by Description" oninput="applyFilters()">
+    <input type="text" id="filterDifficulty" placeholder="Filter by Difficulty" oninput="applyFilters()">
+    <input type="text" id="filterCoordinatesX" placeholder="Filter by Coordinates X" oninput="applyFilters()">
+    <input type="text" id="filterCoordinatesY" placeholder="Filter by Coordinates Y" oninput="applyFilters()">
+    <input type="text" id="filterMinimalPoint" placeholder="Filter by Minimal Point" oninput="applyFilters()">
+    <input type="text" id="filterPersonalQualitiesMaximum" placeholder="Filter by Personal Qualities Max" oninput="applyFilters()">
+    <input type="text" id="filterPersonalQualitiesMinimum" placeholder="Filter by Personal Qualities Min" oninput="applyFilters()">
+    <input type="text" id="filterAuthorName" placeholder="Filter by Author Name" oninput="applyFilters()">
+    <input type="text" id="filterAuthorWeight" placeholder="Filter by Author Weight" oninput="applyFilters()">
+    <input type="text" id="filterAuthorEyeColor" placeholder="Filter by Author Eye Color" oninput="applyFilters()">
+    <input type="text" id="filterAuthorHairColor" placeholder="Filter by Author Hair Color" oninput="applyFilters()">
+    <input type="text" id="filterAuthorLocationX" placeholder="Filter by Location X" oninput="applyFilters()">
+    <input type="text" id="filterAuthorLocationY" placeholder="Filter by Location Y" oninput="applyFilters()">
+    <input type="text" id="filterAuthorLocationName" placeholder="Filter by Location Name" oninput="applyFilters()">
+    <input type="text" id="filterAuthorPassportID" placeholder="Filter by Passport ID" oninput="applyFilters()">
+    <button onclick="clearFilters()">Clear Filters</button>
+</div>
+
+
+<h2>LabWork Entities</h2>
+<div class="table-container">
+    <table id="labWorkTable">
+        <thead>
+        <tr>
+            <th onclick="applySorting('id')">ID</th>
+            <th onclick="applySorting('ownerUsername')">Owner</th>
+            <th onclick="applySorting('creationDate')">Creation Date</th>
+            <th onclick="applySorting('name')">Name</th>
+            <th onclick="applySorting('disciplineName')">Discipline Name</th>
+            <th onclick="applySorting('disciplinePracticeHours')">Practice Hours</th>
+            <th onclick="applySorting('description')">Description</th>
+            <th onclick="applySorting('difficulty')">Difficulty</th>
+            <th onclick="applySorting('coordinatesX')">Coordinates X</th>
+            <th onclick="applySorting('coordinatesY')">Coordinates Y</th>
+            <th onclick="applySorting('minimalPoint')">Minimal Point</th>
+            <th onclick="applySorting('personalQualitiesMaximum')">Personal Qualities Max</th>
+            <th onclick="applySorting('personalQualitiesMinimum')">Personal Qualities Min</th>
+            <th onclick="applySorting('authorName')">Author Name</th>
+            <th onclick="applySorting('authorWeight')">Author Weight</th>
+            <th onclick="applySorting('authorEyeColor')">Author Eye Color</th>
+            <th onclick="applySorting('authorHairColor')">Author Hair Color</th>
+            <th onclick="applySorting('authorLocationX')">Location X</th>
+            <th onclick="applySorting('authorLocationY')">Location Y</th>
+            <th onclick="applySorting('authorLocationName')">Location Name</th>
+            <th onclick="applySorting('authorPassportID')">Passport ID</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="labWorkTableBody">
+        </tbody>
+    </table>
+</div>
+
+<div id="pagination">
+    <button onclick="previousPage()">Previous</button>
+    <span id="currentPage">1</span> / <span id="totalPages">1</span>
+    <button onclick="nextPage()">Next</button>
+</div>
+
 <a href="/logout">Logout</a>
 </body>
 </html>

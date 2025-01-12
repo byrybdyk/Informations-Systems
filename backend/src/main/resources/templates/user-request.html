@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Special Operations on LabWorks</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .operation {
+            margin-bottom: 20px;
+        }
+        .operation h3 {
+            margin-bottom: 10px;
+        }
+        .operation label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .operation input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        .operation button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .operation button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Special Operations on LabWorks</h2>
+
+
+    <div class="operation">
+        <h3>Delete LabWork by AuthorId</h3>
+        <label for="deleteAuthor">Author Id:</label>
+        <input type="text" id="deleteAuthor" placeholder="Enter author Id">
+        <button onclick="deleteByAuthor()">Delete</button>
+        <div id="deleteResult" class="result"></div>
+    </div>
+
+    <div class="operation">
+        <h3>Count LabWorks with Author Less Than Given</h3>
+        <label for="countAuthor">Author weight</label>
+        <input type="text" id="countAuthor" placeholder="Enter author name">
+        <button onclick="countByAuthorLessThenWeight()">Count</button>
+        <div id="countResult" class="result"></div>
+    </div>
+
+    <div class="operation">
+        <h3>Find LabWorks by Description Prefix</h3>
+        <label for="descriptionPrefix">Description Prefix:</label>
+        <input type="text" id="descriptionPrefix" placeholder="Enter description prefix">
+        <button onclick="findByDescriptionPrefix()">Find</button>
+        <div id="findResult" class="result"></div>
+    </div>
+
+    <div class="operation">
+        <h3>Decrease LabWork Difficulty</h3>
+        <label for="labWorkId">LabWork ID:</label>
+        <input type="number" id="labWorkId" placeholder="Enter LabWork ID">
+        <label for="difficultySteps">Decrease by Steps:</label>
+        <input type="number" id="difficultySteps" placeholder="Enter number of steps">
+        <button onclick="decreaseDifficulty()">Decrease</button>
+        <div id="decreaseResult" class="result"></div>
+    </div>
+
+    <a href="/admin/home">Back to home</a>
+
+</div>
+
+<script src="/js/scripts.js"></script>
+</body>
+</html>

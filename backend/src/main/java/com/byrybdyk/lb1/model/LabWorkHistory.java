@@ -1,36 +1,31 @@
 package com.byrybdyk.lb1.model;
 
+import com.byrybdyk.lb1.model.enums.ChangeType;
 import com.byrybdyk.lb1.model.enums.Difficulty;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-
 import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "lab_work")
-public class LabWork {
+@Table(name = "lab_work_history")
+public class LabWorkHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     @Column(nullable = false)
-    @NotNull(message = "Имя не может быть пустым")
-    @NotBlank(message = "Имя не может быть пустым")
     private String name;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "coordinates_id", nullable = false)
-    @NotNull(message = "Координаты не могут быть пустыми")
     private Coordinates coordinates;
 
     @Column(nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
-    @NotNull(message = "Дата создания не может быть пустой")
     private Date creationDate;
 
     @Column(nullable = true)
-    @NotBlank(message = "Описание не может быть пустым")
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -39,36 +34,35 @@ public class LabWork {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "discipline_id", nullable = false)
-    @NotNull(message = "Дисциплина не может быть пустой")
     private Discipline discipline;
 
     @Column(name = "minimal_point", nullable = false)
-    @NotNull(message = "Минимальный балл не может быть пустым")
-    @Min(value = 1, message = "Минимальный балл должен быть больше 0")
     private Float minimalPoint;
 
     @Column(name = "personal_qualities_minimum", nullable = false)
-    @NotNull(message = "Минимум личных качеств не может быть пустым")
-    @Min(value = 1, message = "Минимум личных качеств должен быть больше 0")
     private double personalQualitiesMinimum;
 
     @Column(name = "personal_qualities_maximum")
-    @Min(value = 1, message = "Максимум личных качеств должен быть больше 0")
     private Float personalQualitiesMaximum;
 
-    @NotNull(message = "Автор не может быть пустым")
     @ManyToOne(optional = false)
     @JoinColumn(name = "author_id", nullable = false)
     private Person author;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "owner", nullable = false)
-    private User owner;
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner_id;
 
-    @PrePersist
-    protected void onCreate() {
-        this.creationDate = new Date();
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ChangeType changeType;
+
+    @Column(name = "changed_by", nullable = false)
+    private String changedBy;
+
+    // Новое поле для времени изменения
+    @Column(name = "update_time", nullable = false)
+    private LocalDateTime updateTime;
 
     public long getId() {
         return id;
@@ -94,9 +88,6 @@ public class LabWork {
         this.coordinates = coordinates;
     }
 
-    public Date getCreationDate() {
-        return creationDate;
-    }
 
     public String getDescription() {
         return description;
@@ -154,11 +145,44 @@ public class LabWork {
         this.author = author;
     }
 
-    public User getOwner() {
-        return owner;
+    public User getOwner_id() {
+        return owner_id;
     }
 
-    public void setOwner(User owner_id) {
-        this.owner = owner_id;
+    public void setOwner_id(User owner_id) {
+        this.owner_id = owner_id;
+    }
+
+    public String getChangedBy() {
+        return changedBy;
+    }
+
+    public void setChangedBy(String changedBy) {
+        this.changedBy = changedBy;
+    }
+
+    public ChangeType getChangeType() {
+        return changeType;
+    }
+
+    public void setChangeType(ChangeType changeType) {
+        this.changeType = changeType;
+    }
+
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
+    }
+
+    public Date getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
     }
 }
+

@@ -3,7 +3,9 @@ package com.byrybdyk.lb1.dto;
 import com.byrybdyk.lb1.model.Coordinates;
 import com.byrybdyk.lb1.model.Discipline;
 import com.byrybdyk.lb1.model.Person;
+import com.byrybdyk.lb1.model.User;
 import com.byrybdyk.lb1.model.enums.Difficulty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Date;
 
@@ -12,15 +14,27 @@ public class LabWorkDTO {
     private String description;
     private Difficulty difficulty;
     private Long id;
-    private Coordinates coordinates;
+
     private Date creationDate;
     private Discipline discipline;
     private Float minimalPoint;
     private double personalQualitiesMinimum;
     private Float personalQualitiesMaximum;
 
+    @JsonProperty("authorId")
     private Long authorId;
+
+    @JsonProperty("author")
     private Person author;
+
+    private Coordinates coordinates;
+    private Long coordinatesId;
+
+    private Long ownerId;
+    private User owner;
+    private String ownerName;
+
+
 
 
 
@@ -118,5 +132,37 @@ public class LabWorkDTO {
 
     public void setAuthor(Person author) {
         this.author = author;
+    }
+
+    public Long getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(Long ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public User getOwner() {
+        return owner;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
+
+    public Long getCoordinatesId() {
+        return coordinatesId;
+    }
+
+    public void setCoordinatesId(Long coordinatesId) {
+        this.coordinatesId = coordinatesId;
     }
 }
